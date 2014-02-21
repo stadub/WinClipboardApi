@@ -4,44 +4,74 @@ using System.Text;
 
 namespace ClipbordHelper
 {
-    public class ClipboardWinApi
+    public class ClipboardWinApi : IDisposable
     {
+        private bool disposed;
+
+        private static readonly IntPtr notOwned = new IntPtr(-1);
+
+        private IntPtr clipbordOwner;
+        public ClipboardWinApi()
+        {
+            clipbordOwner=new IntPtr(-1);
+        }
+
+        public void Open()
+        {
+            this.Open(IntPtr.Zero);
+        }
+        public void Open(IntPtr hWnd)
+        {
+            if (clipbordOwner != notOwned)
+            {
+                throw new ClipbordOpenedException("Clipbord allread");
+            }
+            var opened = OpenClipboard(hWnd);
+            if (!opened)
+            {
+                var errcode = Marshal.GetLastWin32Error();
+                var innerException=Marshal.GetExceptionForHR(errcode);
+                throw new OpenClipbordException(innerException);
+            }
+            clipbordOwner = hWnd;
+        }
+
 
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool OpenClipboard(IntPtr hWndNewOwner);
+        private static extern bool OpenClipboard(IntPtr hWndNewOwner);
 
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool CloseClipboard();
+        private static extern bool CloseClipboard();
         
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern uint RegisterClipboardFormat(string lpszFormat);
+        private static extern uint RegisterClipboardFormat(string lpszFormat);
 
         [DllImport("user32.dll", ThrowOnUnmappableChar = true)]
-        public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+        private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
 
         [DllImport("user32.dll")]
-        public static extern bool EmptyClipboard();
+        private static extern bool EmptyClipboard();
 
 
 
         [DllImport("user32.dll")]
-        public static extern uint GetClipboardSequenceNumber();
+        private static extern uint GetClipboardSequenceNumber();
 
         [DllImport("user32.dll")]
-        public static extern IntPtr GetClipboardData(uint uFormat);
+        private static extern IntPtr GetClipboardData(uint uFormat);
 
         [DllImport("user32.dll")]
-        public static extern uint EnumClipboardFormats(uint format);
+        private static extern uint EnumClipboardFormats(uint format);
 
         [DllImport("user32.dll", ThrowOnUnmappableChar = true)]
-        public static extern int GetClipboardFormatName(uint format,
+        private static extern int GetClipboardFormatName(uint format,
             [Out][MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpszFormatName, int cchMaxCount);
 
         [DllImport("user32.dll")]
-        public static extern IntPtr GetClipboardOwner();
+        private static extern IntPtr GetClipboardOwner();
 
         [DllImport("user32.dll")]
-        public static extern int GetPriorityClipboardFormat(UIntPtr paFormatPriorityList, int cFormats);
+        private static extern int GetPriorityClipboardFormat(UIntPtr paFormatPriorityList, int cFormats);
 
 
 #if WINNT_VISTA
@@ -57,6 +87,30 @@ namespace ClipbordHelper
 
 #endif
 
-       
+        public void Close()
+        {
+            if (clipbordOwner == notOwned)
+                return;
+            Dispose();
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+
+                }
+                disposed = true;
+            }
+            if (clipbordOwner != notOwned)
+                CloseClipboard();
+        }
     }
 }
