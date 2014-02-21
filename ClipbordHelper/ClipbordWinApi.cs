@@ -4,6 +4,7 @@ using System.Text;
 
 namespace ClipbordHelper
 {
+
     public class ClipboardWinApi : IDisposable
     {
         private bool disposed;
@@ -20,11 +21,12 @@ namespace ClipbordHelper
         {
             this.Open(IntPtr.Zero);
         }
+
         public void Open(IntPtr hWnd)
         {
             if (clipbordOwner != notOwned)
             {
-                throw new ClipbordOpenedException("Clipbord allread");
+                throw new ClipbordOpenedException("Clipbord allready opened");
             }
             var opened = OpenClipboard(hWnd);
             if (!opened)
