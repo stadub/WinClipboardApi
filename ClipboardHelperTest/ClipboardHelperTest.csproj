@@ -57,7 +57,7 @@
     <Compile Include="WinformWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClipbordHelper\ClipbordHelper.csproj">
+    <ProjectReference Include="..\ClipboardHelper\ClipboardHelper.csproj">
       <Project>{70180df9-fb5c-4bd1-af05-827405cd7eb3}</Project>
       <Name>ClipbordHelper</Name>
     </ProjectReference>
