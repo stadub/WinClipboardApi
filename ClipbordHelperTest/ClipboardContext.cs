@@ -1,32 +1,32 @@
 ﻿using System;
 using System.Windows.Forms;
-using ClipbordHelper;
+using ClipboardHelper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Clipboard = ClipboardHelper.Clipboard;
 
-namespace ClipbordHelperTest
+namespace ClipboardHelperTest
 {
-    public class ClipbordContext : SpecificationContext
+    public class ClipboardContext : SpecificationContext
     {
-        private ClipboardWinApi clipboardApi;
+        private Clipboard clipboardApi;
         public override void Given()
         {
             base.Given();
-            clipboardApi = new ClipboardWinApi();
+            clipboardApi = new Clipboard();
         }
 
         public override void When()
         {
             base.When();
-            Clipboard.Clear();
-            Clipboard.SetText("12345");
+            System.Windows.Forms.Clipboard.Clear();
+            System.Windows.Forms.Clipboard.SetText("12345");
         }
 
 
         [TestMethod]
-        public void ShouldGetClipbordText()
+        public void ShouldGetClipboardText()
         {
             clipboardApi.Open();
-            clipboardApi.
             clipboardApi.Close();
         }
     }

@@ -2,7 +2,7 @@
 using System.Net.Mime;
 using System.Windows.Forms;
 
-namespace ClipbordHelperTest
+namespace ClipboardHelperTest
 {
     internal class WinformWrapper : IDisposable
     {

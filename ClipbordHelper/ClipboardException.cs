@@ -1,39 +1,40 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace ClipbordHelper
+namespace ClipboardHelper
 {
     [Serializable]
-    public class ClipbordException : Exception
+    public class ClipboardException : Exception
     {
-        public ClipbordException() { }
+        public ClipboardException() { }
 
-        public ClipbordException(string message) : base(message) { }
+        public ClipboardException(string message) : base(message) { }
 
-        public ClipbordException(string message, Exception inner) : base(message, inner) { }
+        public ClipboardException(string message, Exception inner) : base(message, inner) { }
 
-        protected ClipbordException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ClipboardException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
     [Serializable]
-    public class OpenClipbordException : ClipbordException
+    public class OpenClipboardException : ClipboardException
     {
-        public OpenClipbordException(){}
+        public OpenClipboardException(){}
 
-        public OpenClipbordException(string message) : base(message){}
+        public OpenClipboardException(string message) : base(message){}
 
-        public OpenClipbordException(Exception inner) : base("Error opening clipbord", inner){}
+        public OpenClipboardException(Exception inner) : base("Error opening Clipboard", inner){}
 
-        protected OpenClipbordException(SerializationInfo info,StreamingContext context) : base(info, context){}
+        protected OpenClipboardException(SerializationInfo info,StreamingContext context) : base(info, context){}
     }
-    [Serializable]
-    public class ClipbordOpenedException : OpenClipbordException
-    {
-        public ClipbordOpenedException(){}
 
-        public ClipbordOpenedException(string message) : base(message){}
+    [Serializable]
+    public class ClipboardOpenedException : OpenClipboardException
+    {
+        public ClipboardOpenedException(){}
+
+        public ClipboardOpenedException(string message) : base(message){}
         
-        protected ClipbordOpenedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ClipboardOpenedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
     
 }
