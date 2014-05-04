@@ -40,8 +40,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="StandartClipbordFormats.cs" />
-    <Compile Include="ClipbordException.cs" />
-    <Compile Include="ClipbordWinApi.cs" />
+    <Compile Include="ClipboardException.cs" />
+    <Compile Include="ClipboardWinApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

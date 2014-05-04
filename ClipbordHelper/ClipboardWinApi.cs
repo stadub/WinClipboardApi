@@ -2,19 +2,19 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ClipbordHelper
+namespace ClipboardHelper
 {
 
-    public class ClipboardWinApi : IDisposable
+    public class Clipboard : IDisposable
     {
         private bool disposed;
 
         private static readonly IntPtr notOwned = new IntPtr(-1);
 
-        private IntPtr clipbordOwner;
-        public ClipboardWinApi()
+        private IntPtr ClipboardOwner;
+        public Clipboard()
         {
-            clipbordOwner=new IntPtr(-1);
+            ClipboardOwner=new IntPtr(-1);
         }
 
         public void Open()
@@ -24,18 +24,26 @@ namespace ClipbordHelper
 
         public void Open(IntPtr hWnd)
         {
-            if (clipbordOwner != notOwned)
+            if (ClipboardOwner != notOwned)
             {
-                throw new ClipbordOpenedException("Clipbord allready opened");
+                throw new ClipboardOpenedException("Clipboard allready opened");
             }
             var opened = OpenClipboard(hWnd);
             if (!opened)
             {
                 var errcode = Marshal.GetLastWin32Error();
                 var innerException=Marshal.GetExceptionForHR(errcode);
-                throw new OpenClipbordException(innerException);
+                throw new OpenClipboardException(innerException);
             }
-            clipbordOwner = hWnd;
+            ClipboardOwner = hWnd;
+        }
+
+        public void Clear()
+        {
+            if (ClipboardOwner==notOwned)
+            {
+                throw new ClipboardException("Cannot clear clipboard ");
+            }
         }
 
 
@@ -91,7 +99,7 @@ namespace ClipbordHelper
 
         public void Close()
         {
-            if (clipbordOwner == notOwned)
+            if (ClipboardOwner == notOwned)
                 return;
             Dispose();
         }
@@ -111,7 +119,7 @@ namespace ClipbordHelper
                 }
                 disposed = true;
             }
-            if (clipbordOwner != notOwned)
+            if (ClipboardOwner != notOwned)
                 CloseClipboard();
         }
     }

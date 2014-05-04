@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ClipbordHelperTest
+namespace ClipboardHelperTest
 {
     public abstract class SpecificationContext
     {
