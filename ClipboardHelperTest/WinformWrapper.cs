@@ -18,6 +18,12 @@ namespace ClipboardHelperTest
             if (form.Visible)
                     return;
                 form.Show();
+                form.GotFocus += form_GotFocus;
+        }
+
+        void form_GotFocus(object sender, EventArgs e)
+        {
+           
         }
 
         public void CloseWindow()
@@ -44,7 +50,7 @@ namespace ClipboardHelperTest
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
+        public IntPtr Handle { get { return form.Handle; } }
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)

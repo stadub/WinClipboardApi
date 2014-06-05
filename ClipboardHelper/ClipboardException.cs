@@ -36,5 +36,25 @@ namespace ClipboardHelper
         
         protected ClipboardOpenedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
+    [Serializable]
+    public class ClipboardClosedException : OpenClipboardException
+    {
+        public ClipboardClosedException(){}
+
+        public ClipboardClosedException(string message) : base(message){}
+
+        protected ClipboardClosedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
+
+    [Serializable]
+    public class ClipboardDataException : ClipboardException
+    {
+        public ClipboardDataException() { }
+
+        public ClipboardDataException(string message) : base(message) { }
+        public ClipboardDataException(string message, Exception inner) : base(message, inner) { }
+
+        protected ClipboardDataException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
     
 }
