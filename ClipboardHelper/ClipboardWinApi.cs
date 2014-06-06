@@ -18,10 +18,13 @@ namespace ClipboardHelper
         public Clipboard()
         {
             ClipboardOwner=new IntPtr(-1);
+
             var formats=Enum.GetValues(typeof (StandartClipboardFormats));
-            foreach (uint format in formats)
+            foreach (StandartClipboardFormats format in formats)
             {
-                registeredFormats.Add(((StandartClipboardFormats)format).ToString(), format);
+                var formatIdWraper = new StandardFormatIdWraper(format);
+
+                registeredFormats.Add(formatIdWraper.FormatName, formatIdWraper.FormatId);
             }
         }
 
@@ -188,10 +191,6 @@ namespace ClipboardHelper
         private static extern bool GetUpdatedClipboardFormats(ref uint[] lpuiFormats, uint cFormats, [Out] UIntPtr pcFormatsOut);
 #endif
 
-        public void RegisterFormatProvider<T>(IClipbordFormatProvider<T> provider)
-        {
-
-        }
         public List<uint> GetAvalibleFromats()
         {
             GuardClipbordOpened();
