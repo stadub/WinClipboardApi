@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using ClipboardHelper;
+using ClipboardHelper.FormatProviders;
 using ClipboardHelperTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;
@@ -101,6 +103,72 @@ namespace ClipbordHelperTest
                 //clipboard.Close();
             }
             
+        }
+
+        private const string TextHtmlData = @"Version:1.0
+StartHTML:000000194
+EndHTML:000001170
+StartFragment:000000493
+EndFragment:000001112
+StartSelection:000000507
+EndSelection:000001108
+SourceURL:res://iesetup.dll/HardAdmin.htm
+<!DOCTYPE HTML PUBLIC ""-//W3C//DTD HTML 4.0 Transitional//EN\"">
+<HTML dir=ltr><HEAD><TITLE>Lorem ipsum dolor sit amet</TITLE><LINK 
+rel=stylesheet type=text/css href=""adipiscing.css"" media=screen></HEAD>
+<BODY>
+<TABLE>
+<TBODY>
+<TR>
+<TD class=ie><!--StartFragment-->
+<P id=Text1>Pellentesque imperdiet consequat lectus sed accumsan. <A id=porta
+title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend euismod.</A>.</P>
+<P id=Text2> Praesent eu turpis sem.</P><!--EndFragment--></TD></TR></TBODY></TABLE></BODY></HTML> ";
+
+        [TestMethod]
+        public void ShoudlDeserializeSampleString()
+        {
+            UnicodeStringSerializer serializer=new UnicodeStringSerializer();
+            var bytes=serializer.Serialize(TextHtmlData);
+
+            HtmlFormatProvider provider= new HtmlFormatProvider();
+            var result=provider.Deserialize(bytes);
+
+            Assert.AreEqual(result.StartHTML, 000000194);
+            Assert.AreEqual(result.EndHTML,000001170);
+            Assert.AreEqual(result.StartFragment,000000493);
+            Assert.AreEqual(result.EndFragment,000001112);
+            Assert.AreEqual(result.StartSelection,000000507);
+            Assert.AreEqual(result.EndSelection,000001108);
+            Assert.AreEqual(result.SourceURL, new Uri("res://iesetup.dll/HardAdmin.htm"));
+        }
+        public static Regex htmlDoc = new Regex(
+            "^(<.*)",
+          RegexOptions.Multiline
+          | RegexOptions.Singleline
+          | RegexOptions.CultureInvariant
+          | RegexOptions.Compiled
+          );
+        [TestMethod]
+        public void ShoudlSerializeSampleString()
+        {
+            HtmlClipboardFormatData data = new HtmlClipboardFormatData();
+            data.Version= "1.0";
+            data.StartHTML= 000000194;
+            data.EndHTML=000001170;
+            data.StartFragment=000000493;
+            data.EndFragment=000001112;
+            data.StartSelection=000000507;
+            data.EndSelection=000001108;
+            data.SourceURL= new Uri("res://iesetup.dll/HardAdmin.htm");
+            string[] results = htmlDoc.Split(TextHtmlData);
+            data.Html = results[1];
+
+            HtmlFormatProvider provider= new HtmlFormatProvider();
+            byte[] result = provider.Serialize(data);
+            UnicodeStringSerializer serializer = new UnicodeStringSerializer();
+            var text = serializer.Deserialize(result);
+            Assert.AreEqual(text, TextHtmlData);
         }
 
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection.Emit;
 using System.Text;
 
@@ -25,12 +26,51 @@ namespace ClipboardHelper
 
     }
 
-    public class UnicodeTextProvider : DataFormatProvider<string>
+    public class FormatedAttribute : Attribute
+    {
+        public FormatedAttribute(string format)
+        {
+            this.Format = format;
+        }
+
+        public string Format { get; set; }
+    }
+    public class NonSerializableAttribute : Attribute
+    {
+    }
+    public class FormatedNumericAttribute : FormatedAttribute
+    {
+        public FormatedNumericAttribute() : base("D")
+        {
+        }
+        public FormatedNumericAttribute(string format) : base(format)
+        {
+        }
+    }
+
+    public class UnicodeStringSerializer
+    {
+        public byte[] Serialize(string data)
+        {
+            data += '\0';
+            return Encoding.Unicode.GetBytes(data);
+        }
+
+
+        public string Deserialize(byte[] data)
+        {
+            Array.Resize(ref data, data.Length - 2);
+            return Encoding.Unicode.GetString(data);
+        }
+    }
+    public abstract class StandartUnicodeTextProviderBase: DataFormatProvider<string>
     {
         private readonly StandardFormatIdWraper formatIdWraper;
-        public UnicodeTextProvider()
+        private UnicodeStringSerializer provider;
+        public StandartUnicodeTextProviderBase(StandartClipboardFormats standartClipboardFormat)
         {
-            formatIdWraper= new StandardFormatIdWraper(StandartClipboardFormats.UnicodeText);
+            this.formatIdWraper = new StandardFormatIdWraper(standartClipboardFormat);
+            provider = new UnicodeStringSerializer();
         }
         public override string FormatId
         {
@@ -39,56 +79,82 @@ namespace ClipboardHelper
 
         public override byte[] Serialize(string data)
         {
-            data += '\0';
-            return Encoding.Unicode.GetBytes(data);
+            return provider.Serialize(data);
+        }
+        
+        public override string Deserialize(byte[] data)
+        {
+            return provider.Deserialize(data);
+        }
+    }
+
+    public class UnicodeTextProvider : DataFormatProvider<string>
+    {
+        private UnicodeStringSerializer provider;
+
+        public UnicodeTextProvider()
+        {
+            provider = new UnicodeStringSerializer();
+        }
+        public override string FormatId
+        {
+            get { return "CF_UNICODETEXT"; }
+        }
+
+        public override byte[] Serialize(string data)
+        {
+            return provider.Serialize(data);
         }
 
 
         public override string Deserialize(byte[] data)
         {
-            Array.Resize(ref data, data.Length - 2);
-            return Encoding.Unicode.GetString(data);
+            return provider.Deserialize(data);
+        }
+    }
+
+    public class FileDropProvider :StandartUnicodeTextProviderBase
+    {
+        public FileDropProvider(): base(StandartClipboardFormats.HDrop){}
+    }
+
+    public class UnicodeFileNameProvider :  DataFormatProvider<FileInfo>
+    {
+        private UnicodeStringSerializer provider;
+        public UnicodeFileNameProvider()
+        {
+            provider = new UnicodeStringSerializer();
+        }
+        public override string FormatId
+        {
+            get { return "FileNameW"; }
+        }
+
+        public override byte[] Serialize(FileInfo file)
+        {
+            return provider.Serialize(file.FullName);
+        }
+
+        public override FileInfo Deserialize(byte[] data)
+        {
+            var filePath= provider.Deserialize(data);
+            return new FileInfo(filePath);
         }
     }
     
-    //public class AcsiiTextProvider : DataFormatProvider<string>
+    
+
+    //public class SkypeFormatProvider : UnicodeTextProvider
     //{
-    //    public AcsiiTextProvider(Clipboard clipboard) : base(clipboard)
+    //    public SkypeFormatProvider(Clipboard clipboard) 
     //    {
     //    }
 
-    //    protected override string FormatId
+    //    public override string FormatId
     //    {
-    //        get { return "Locale"; }
+    //        get { return "SkypeMessageFragment"; }
     //    }
-
-    //    public override void Serialize(string data)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public override bool CanSerialize(string data)
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    public override string Deserialize()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-    //}
-
-    public class SkypeFormatProvider : UnicodeTextProvider
-    {
-        public SkypeFormatProvider(Clipboard clipboard) 
-        {
-        }
-
-        public override string FormatId
-        {
-            get { return "SkypeMessageFragment"; }
-        }
 
         
-    }
+    //}
 }
