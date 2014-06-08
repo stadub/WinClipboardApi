@@ -141,20 +141,4 @@ namespace ClipboardHelper
             return new FileInfo(filePath);
         }
     }
-    
-    
-
-    //public class SkypeFormatProvider : UnicodeTextProvider
-    //{
-    //    public SkypeFormatProvider(Clipboard clipboard) 
-    //    {
-    //    }
-
-    //    public override string FormatId
-    //    {
-    //        get { return "SkypeMessageFragment"; }
-    //    }
-
-        
-    //}
 }
