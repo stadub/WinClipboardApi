@@ -75,7 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClipboardFormatProviders.cs" />
+    <Compile Include="FormatProviders\ClipboardFormatProviders.cs" />
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="Win32\Win32Helpers.cs" />
     <Compile Include="Win32\GlobalMemory.cs" />
