@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection.Emit;
 using System.Text;
+using ClipboardHelper.FormatProviders;
 
 namespace ClipboardHelper
 {
@@ -12,18 +13,59 @@ namespace ClipboardHelper
 
         T Deserialize(byte[] data);
     }
+    
+    public interface IClipbordFormatProvider
+    {
+        string FormatId { get; }
+        byte[] Serialize(object data);
+
+        object Deserialize(byte[] data);
+    }
 
     //extend provider
 
-    public abstract class DataFormatProvider<T> : IClipbordFormatProvider<T>
+    public abstract class DataFormatProvider<T> : IClipbordFormatProvider<T>, IClipbordFormatProvider
     {
 
         public abstract string FormatId { get; }
 
         public abstract byte[] Serialize(T data);
 
+        byte[] IClipbordFormatProvider.Serialize(object data)
+        {
+            return Serialize((T) data);
+        }
+
+        object IClipbordFormatProvider.Deserialize(byte[] data)
+        {
+            return Deserialize(data);
+        }
+
         public abstract T Deserialize(byte[] data);
 
+
+        protected bool Equals(DataFormatProvider<T> other)
+        {
+            if (ReferenceEquals(other, this))
+                return true;
+            if (other == null) return false;
+            return other.FormatId == this.FormatId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as DataFormatProvider<T>);
+        }
+
+        //public override int GetHashCode()
+        //{
+        //    FormatId
+        //}
+
+        public override string ToString()
+        {
+            return string.Format("{{{0} FormatId:{1}}}", this.GetType().Name, FormatId);
+        }
     }
 
     public class FormatedAttribute : Attribute
@@ -88,30 +130,6 @@ namespace ClipboardHelper
         }
     }
 
-    public class UnicodeTextProvider : DataFormatProvider<string>
-    {
-        private UnicodeStringSerializer provider;
-
-        public UnicodeTextProvider()
-        {
-            provider = new UnicodeStringSerializer();
-        }
-        public override string FormatId
-        {
-            get { return "CF_UNICODETEXT"; }
-        }
-
-        public override byte[] Serialize(string data)
-        {
-            return provider.Serialize(data);
-        }
-
-
-        public override string Deserialize(byte[] data)
-        {
-            return provider.Deserialize(data);
-        }
-    }
 
     public class FileDropProvider :StandartUnicodeTextProviderBase
     {
