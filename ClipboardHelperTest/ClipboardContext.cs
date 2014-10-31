@@ -26,7 +26,7 @@ namespace ClipboardHelperTest
         [TestMethod]
         public void ShouldGetClipboardText()
         {
-            clipboardApi.Open();
+            clipboardApi.OpenRead();
             clipboardApi.Close();
         }
     }
