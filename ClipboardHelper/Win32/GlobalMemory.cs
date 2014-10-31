@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
+using ClipboardHelper.WinApi;
 
 namespace ClipboardHelper.Win32
 {
@@ -32,41 +33,6 @@ namespace ClipboardHelper.Win32
         Gptr = 0x0040,
     }
         
-    [Serializable]
-    public class AlreadyHaveMemoryBlcokException : GlobalMemoryException
-    {
-        public AlreadyHaveMemoryBlcokException() { }
-
-        public AlreadyHaveMemoryBlcokException(string message) : base(message) { }
-
-        public AlreadyHaveMemoryBlcokException(string message, Exception inner) : base(message, inner) { }
-
-        protected AlreadyHaveMemoryBlcokException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    }
-    [Serializable]
-    public class NotHaveMemoryBlcokException : GlobalMemoryException
-    {
-        public NotHaveMemoryBlcokException() { }
-
-        public NotHaveMemoryBlcokException(string message) : base(message) { }
-
-        public NotHaveMemoryBlcokException(string message, Exception inner) : base(message, inner) { }
-
-        protected NotHaveMemoryBlcokException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    }
-
-    [Serializable]
-    public class GlobalMemoryException : Exception
-    {
-        public GlobalMemoryException(){}
-
-        public GlobalMemoryException(string message) : base(message){}
-
-        public GlobalMemoryException(string message, Exception inner) : base(message, inner) { }
-
-        protected GlobalMemoryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    }
-
     class GlobalMemory:IDisposable
     {
         private const int ERROR_NOT_LOCKED=158;
@@ -93,32 +59,17 @@ namespace ClipboardHelper.Win32
 
             if (hMem != IntPtr.Zero)
                 throw new AlreadyHaveMemoryBlcokException("Allready associated memory block,for allocate mew memory block use new istance of the clsss");
-            this.hMem = GlobalAlloc((uint)flags, new UIntPtr((uint)bytes));
+            this.hMem = Memory.GlobalAlloc((uint)flags, new UIntPtr((uint)bytes));
             GuardZeroHandle(hMem,"Cannot allocate global memory");
             allocated = true;
             return hMem;
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GlobalLock(IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
-
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GlobalUnlock(IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        private static extern UIntPtr GlobalSize(IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GlobalFree(IntPtr hMem);
 
         public uint Size()
         {
             GuardNotContainsValue();
-            var size = GlobalSize(hMem);
+            var size = Memory.GlobalSize(hMem);
             GuardZeroHandle(size,"Cannot determine memory block size");
             return size.ToUInt32();
         }
@@ -130,7 +81,7 @@ namespace ClipboardHelper.Win32
                 Interlocked.Exchange(ref locked, 0);
                 return;
             }
-            if (GlobalUnlock(hMem))
+            if (Memory.GlobalUnlock(hMem))
             {
                 var err = Marshal.GetLastWin32Error();
                 if(err==ERROR_NOT_LOCKED)
@@ -141,7 +92,7 @@ namespace ClipboardHelper.Win32
         public IntPtr Lock()
         {
             Interlocked.Increment(ref locked);
-            IntPtr memPtr = GlobalLock(hMem);
+            IntPtr memPtr = Memory.GlobalLock(hMem);
             GuardZeroHandle(memPtr,"Cannot lock memory block");
             return memPtr;
         }
@@ -190,7 +141,7 @@ namespace ClipboardHelper.Win32
             }
             if (allocated)
             {
-                GlobalFree(hMem);
+                Memory.GlobalFree(hMem);
             }
             disposed = true;
         }
@@ -199,5 +150,7 @@ namespace ClipboardHelper.Win32
         {
             Dispose(false);
         }
+
+        
     }
 }
