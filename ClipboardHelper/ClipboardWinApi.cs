@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using ClipboardHelper.FormatProviders;
 using ClipboardHelper.Win32;
 
 namespace ClipboardHelper
@@ -28,7 +29,7 @@ namespace ClipboardHelper
             }
         }
 
-        public void Open()
+        public void OpenRead()
         {
             this.Open(IntPtr.Zero);
         }
@@ -160,7 +161,7 @@ namespace ClipboardHelper
         [DllImport("user32.dll")]
         private static extern bool EmptyClipboard();
 
-        public uint SequenceNumber
+        public static uint SequenceNumber
         {
             get { return GetClipboardSequenceNumber(); }
         }
@@ -191,21 +192,42 @@ namespace ClipboardHelper
         private static extern bool GetUpdatedClipboardFormats(ref uint[] lpuiFormats, uint cFormats, [Out] UIntPtr pcFormatsOut);
 #endif
 
-        public List<uint> GetAvalibleFromats()
+
+        public IEnumerable<IClipbordFormatProvider> GetAvalibleFromats(IEnumerable<IClipbordFormatProvider> formats,bool includeUnknown=false)
         {
+            var fromatsDict=formats.ToDictionary(provider => provider.FormatId);
             GuardClipbordOpened();
-            List<uint> formats= new List<uint>();
+            List<uint> unknownformatsIds= new List<uint>();
             uint currentFormat = 0;
+            var registeredIds=registeredFormats.ToDictionary(pair => pair.Value);
             while (true)
             {
                 currentFormat = EnumClipboardFormats(currentFormat);
                 if (currentFormat != 0)
-                    formats.Add(currentFormat);
+                {
+                    KeyValuePair<string, uint> registeredFormatId;
+                    if (registeredIds.TryGetValue(currentFormat, out registeredFormatId))
+                    {
+                        if (fromatsDict.ContainsKey(registeredFormatId.Key))
+                            yield return fromatsDict[registeredFormatId.Key];
+                        else
+                            unknownformatsIds.Add(currentFormat);
+                    }
+                    else
+                        unknownformatsIds.Add(currentFormat);
+                }
                 else
                 {
                     var err = Marshal.GetLastWin32Error();
                     if (err == 0)
-                        return formats;
+                    {
+                        if (includeUnknown)
+                        {
+                            foreach (var unknownformatId in unknownformatsIds)
+                                yield return new UnknownFormatProvider(unknownformatId);
+                        }
+                        yield break; 
+                    }
                     throw new ClipboardDataException("Error in retreiving avalible clipbord formats",
                         ExceptionHelpers.GetLastWin32Exception());
 
@@ -254,6 +276,20 @@ namespace ClipboardHelper
         [DllImport("user32.dll")]
         public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
         
+#else
+        public static bool AddClipboardFormatListener(IntPtr hwnd)
+        {
+            throw new NotSupportedException("This function requeare Windows Vista or above");
+        }
+        public static bool RemoveClipboardFormatListener(IntPtr hwnd)
+        {
+            throw new NotSupportedException("This function requeare Windows Vista or above");
+        }
 #endif
+
+        public ClipboardListener(IntPtr hwnd)
+        {
+            AddClipboardFormatListener(hwnd);
+        }
     }
 }
