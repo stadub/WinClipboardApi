@@ -186,7 +186,7 @@ namespace ClipboardHelper
         private static extern int GetPriorityClipboardFormat(UIntPtr paFormatPriorityList, int cFormats);
 
 
-#if WINNT_VISTA
+#if WIN_VISTA
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool GetUpdatedClipboardFormats(ref uint[] lpuiFormats, uint cFormats, [Out] UIntPtr pcFormatsOut);
@@ -267,7 +267,7 @@ namespace ClipboardHelper
 
     public class ClipboardListener
     {
-#if WINNT_VISTA
+#if WIN_VISTA
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

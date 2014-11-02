@@ -1,0 +1,25 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+	<Target Name="SetWinVersionConstants">
+		<Message Text='--===Setting Windows EnvVariables"===--' Importance="Normal"/>
+		<PropertyGroup>
+			<WindowsMajorVersion>$([System.Environment]::OSVersion.Version.Major)</WindowsMajorVersion>
+		</PropertyGroup>
+		<PropertyGroup>
+			<WindowsMinorVersion>$([System.Environment]::OSVersion.Version.Minor)</WindowsMinorVersion>
+		</PropertyGroup>
+		
+		<PropertyGroup Condition="$(WindowsMajorVersion)>=6">
+			<WinVersion>WIN_VISTA;WIN_2008</WinVersion>
+		</PropertyGroup>
+		<PropertyGroup Condition="$(WindowsMajorVersion)>=6 And $(WindowsMinorVersion)>=1 ">
+			<WinVersion>$(WinVersion);WIN_SEVEN;WIN_2008_R2</WinVersion>
+		</PropertyGroup>
+		<PropertyGroup Condition="$(WindowsMajorVersion)>=6 And $(WindowsMinorVersion)>=2 ">
+			<WinVersion>$(WinVersion);WIN_EIGHT;WIN_2012</WinVersion>
+		</PropertyGroup>
+		<PropertyGroup Condition="$(WindowsMajorVersion)>=6 And $(WindowsMinorVersion)>=3 ">
+			<WinVersion>$(WinVersion);WIN_EIGHT_DOT_ONE;WIN_2012_R2</WinVersion>
+		</PropertyGroup>
+		<Message Text='Windows version variables: WinVersion=$(WinVersion)' Importance="High"/>
+	</Target>
+</Project>
