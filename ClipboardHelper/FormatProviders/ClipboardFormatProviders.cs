@@ -6,7 +6,7 @@ using ClipboardHelper.FormatProviders;
 
 namespace ClipboardHelper
 {
-    public interface IClipbordFormatProvider<T>
+    public interface IClipbordFormatProvider<T> : IClipbordFormatProvider
     {
         string FormatId { get; }
         byte[] Serialize(T data);
@@ -33,6 +33,10 @@ namespace ClipboardHelper
 
         byte[] IClipbordFormatProvider.Serialize(object data)
         {
+            if(data==null)
+                throw new ArgumentNullException("data");
+            if ( !(data is T))
+                throw new ArgumentException("data", string.Format("Cannot cast value of {0} to {1} type",data.GetType(),typeof(T)));
             return Serialize((T) data);
         }
 

@@ -105,7 +105,7 @@ namespace ClipbordHelperTest
             {
                 clipboard.OpenRead();
 
-                formats = clipboard.GetAvalibleFromats(new DataFormatProvider<int>[] {}).ToList();
+                formats = clipboard.GetAvalibleFromats(new IClipbordFormatProvider<int>[] { }).ToList();
                 clipboard.Close();
             }
             Assert.IsTrue(formats[0] is UnknownFormatProvider);

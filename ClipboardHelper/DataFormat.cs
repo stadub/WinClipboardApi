@@ -10,7 +10,7 @@ namespace ClipboardHelper
     {
         List<IClipbordFormatProvider> providers= new List<IClipbordFormatProvider>();
 
-        protected void AddProvider<T>(DataFormatProvider<T> provider)
+        protected void AddProvider<T>(IClipbordFormatProvider<T> provider)
         {
             providers.Add(provider);
         }
