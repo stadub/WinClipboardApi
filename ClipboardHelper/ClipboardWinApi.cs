@@ -264,32 +264,4 @@ namespace ClipboardHelper
             ClipboardOwner = new IntPtr(-1);
         }
     }
-
-    public class ClipboardListener
-    {
-#if WIN_VISTA
-
-        [DllImport("user32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
-
-        [DllImport("user32.dll")]
-        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
-        
-#else
-        public static bool AddClipboardFormatListener(IntPtr hwnd)
-        {
-            throw new NotSupportedException("This function requeare Windows Vista or above");
-        }
-        public static bool RemoveClipboardFormatListener(IntPtr hwnd)
-        {
-            throw new NotSupportedException("This function requeare Windows Vista or above");
-        }
-#endif
-
-        public ClipboardListener(IntPtr hwnd)
-        {
-            AddClipboardFormatListener(hwnd);
-        }
-    }
 }

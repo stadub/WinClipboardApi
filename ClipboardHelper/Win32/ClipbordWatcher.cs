@@ -1,52 +1,113 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ClipboardHelper.Helpers;
+using ClipboardHelper.Win32.ClipbordWatcherTypes;
 
 namespace ClipboardHelper.Win32
 {
-    class ClipbordWatcherWindow:ApiWindow
-    {
-        public ClipbordWatcherWindow()
-            : base("ClipbordWatcher")
-        {
-        }
 
-        public new IntPtr WindowHandle { get{return base.WindowHandle;}} 
-
-        private const int PM_REMOVE = 0x0001;
-        private const int WM_CLIPBOARDUPDATE = 0x031D;
-
-        public EventHandler<EventArgs> ClipboardContentChanged; 
-
-        protected override IntPtr WindowProc(IntPtr hwnd, uint uMsg, IntPtr wParam, IntPtr lParam)
-        {
-            switch (uMsg)
-            {
-                case WM_CLIPBOARDUPDATE:
-                    if (ClipboardContentChanged != null) 
-                        ClipboardContentChanged(this,new EventArgs());
-                    return IntPtr.Zero;
-            }
-            return base.WindowProc(hwnd, uMsg, wParam, lParam);
-        }
-    }
-
+  
     public class ClipbordWatcher:IDisposable
     {
-        private ClipbordWatcherWindow watcherWindow;
+
+        public EventHandler<EventArgs> ClipboardContentChanged;
+
         public ClipbordWatcher()
         {
-            watcherWindow= new ClipbordWatcherWindow();
-            watcherWindow.RegisterWindowClass();
-            watcherWindow.ClipboardContentChanged += (sender, args) => ClipboardContentChanged();
             waitHandle= new ManualResetEvent(false);
         }
 
+        private Process proc;
+        public void Start()
+        {
+            //var procStartInfo = new ProcessStartInfo("ClipboardWatcher.exe");
+            var procStartInfo = new ProcessStartInfo(
+@"C:\Users\Dima\Documents\Visual Studio 2013\Projects\ClipbordHelper\Debug\ClipboardWatcher.exe");
+            //procStartInfo.CreateNoWindow = true;
+            procStartInfo.RedirectStandardOutput= true;
+            procStartInfo.RedirectStandardInput= true;
+            procStartInfo.UseShellExecute = false;
+
+            var classNameBuilder= new StringBuilder(AppDomain.CurrentDomain.FriendlyName);
+            for (int i = 0; i < classNameBuilder.Length; i++)
+            {
+                char c = classNameBuilder[i];
+                if (!Char.IsLetterOrDigit(c))
+                    classNameBuilder[i] = '_';
+            }
+
+            procStartInfo.Arguments = classNameBuilder.ToString();
+            proc=Process.Start(procStartInfo);
+
+            string line;
+            while ((line=proc.StandardOutput.ReadLine())!=null)
+            {
+
+                var data = line.SplitString(':');
+
+                MsgSeverity severity;
+                MsgSeverity.TryParse(data.Item1, out severity);
+
+                switch (severity)
+                {
+                    case MsgSeverity.Error:
+                        var err = data.Item2;
+                        var errData=err.SplitString(':');
+                        var errCodeStr = errData.Item1.Replace("ErrCode", "");
+                        var errCode = Int32.Parse(errCodeStr);
+                        Marshal.ThrowExceptionForHR(errCode);
+                        break;
+                    case MsgSeverity.Warning:
+                        break;
+                    case MsgSeverity.Info:
+                        break;
+                    case MsgSeverity.AppData:
+                        UpdateAppState(data.Item2);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+               
+            }
+        }
+
+
+        private void UpdateAppState(string text)
+        {
+            MsgType type;
+            MsgType.TryParse(data.Item2, out type);
+            switch (type)
+            {
+
+                case MsgType.WindowHandle:
+                    ParseHwnd(args[1]);
+                    //var handle = new UIntPtr(hwndPtr);
+                    break;
+                case MsgType.CopyData:
+                    break;
+                case MsgType.ClipboardUpdate:
+                    if (ClipboardContentChanged != null) ClipboardContentChanged(this, new EventArgs());
+                    break;
+                case MsgType.DestroyClipboard:
+                    break;
+                case MsgType.RenderFormat:
+                    break;
+            }
+        }
+
+        private IntPtr ParseHwnd(string hwndString)
+        {
+            var hwndPtr = Int32.Parse(hwndString,NumberStyles.AllowHexSpecifier);
+            return new IntPtr(hwndPtr);
+        }
         private ManualResetEvent waitHandle;
         public IEnumerable<uint> WaitClipboardData()
         {
@@ -57,7 +118,7 @@ namespace ClipboardHelper.Win32
             }
         } 
 
-        private void ClipboardContentChanged()
+        private void WaitClipboardContentChange()
         {
             waitHandle.Set();
         }
@@ -65,25 +126,7 @@ namespace ClipboardHelper.Win32
         private Task watcherTask;
         public void Create()
         {
-            if(watcherTask!=null)
-                return;
-            watcherWindow.CreateWindow();
-
-            Thread tr= new Thread(() => watcherWindow.ShowWindow());
-            tr.SetApartmentState(ApartmentState.STA);
-            tr.Start();
-            //watcherTask = Task.Factory.StartNew(() => watcherWindow.ShowWindow(),
-            //    CancellationToken.None,
-            //    TaskCreationOptions.None,
-            //    TaskScheduler.Current
-            //    //TaskScheduler.FromCurrentSynchronizationContext()
-            //);
-
-            if (!ClipboardListener.AddClipboardFormatListener(watcherWindow.WindowHandle))
-            {
-                int lastError = Marshal.GetLastWin32Error();
-                throw new Win32Exception(lastError);
-            }
+            
 
         }
 
@@ -103,9 +146,8 @@ namespace ClipboardHelper.Win32
             if (watcherTask != null)
             {
                 watcherTask.Dispose();
-                ClipboardListener.RemoveClipboardFormatListener(watcherWindow.WindowHandle);
+                proc.CloseMainWindow();
             }
-            watcherWindow.Dispose();
 
         }
     }

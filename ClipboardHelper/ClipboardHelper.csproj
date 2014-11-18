@@ -70,7 +70,9 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.CSharp">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -81,7 +83,14 @@
     <Compile Include="FormatProviders\ClipboardFormatProviders.cs" />
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="FormatProviders\SkypeFormatProvider.cs" />
+    <Compile Include="Helpers\Enumerable.cs" />
+    <Compile Include="Helpers\Strings.cs" />
     <Compile Include="Win32\ClipbordWatcher.cs" />
+    <Compile Include="Win32\t4Templates\WatcherTypes.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>WatcherTypes.tt</DependentUpon>
+    </Compile>
     <Compile Include="WinApi\Window.cs" />
     <Compile Include="WinApi\Gdi.cs" />
     <Compile Include="Win32\GlobalMemoryException.cs" />
@@ -92,8 +101,27 @@
     <Compile Include="ClipboardWinApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WinApi\Memory.cs" />
-    <Compile Include="Win32\ApiWindow.cs" />
     <Compile Include="WinApi\WindowEnums.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Win32\t4Templates\WatcherTypes.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>WatcherTypes.cs</LastGenOutput>
+    </None>
+    <None Include="Win32\t4Templates\WatcherAppEnums.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>WatcherAppEnums.h</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Win32\t4Templates\WatcherAppEnums.h">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>WatcherAppEnums.tt</DependentUpon>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -103,10 +131,10 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-   <Import Project="$(SolutionDir)\BuildTargets.target" />
-<Target Name="TargetsGlue" DependsOnTargets="SetWinVersionConstants" BeforeTargets="BeforeBuild">
+  <Import Project="$(SolutionDir)\BuildTargets.target" />
+  <!--<Target Name="TargetsGlue" DependsOnTargets="DetectWinVersionConstants" BeforeTargets="BeforeBuild">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);$(WinVersion)</DefineConstants>
   </PropertyGroup>
-</Target>
+</Target>-->
 </Project>

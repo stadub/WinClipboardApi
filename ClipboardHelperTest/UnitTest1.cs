@@ -269,19 +269,12 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             Assert.AreEqual(quoteText3.Quote, true);
 
         }
-        //[TestMethod]
-        public void Test1()
-        {
-            ApiWindow window = new ApiWindow("testWnd");
-            window.RegisterWindowClass();
-            window.CreateWindow();
-            Thread.Sleep(100000);
-        }
+
         [TestMethod]
         public void WatcherTest()
         {
             ClipbordWatcher watcher = new ClipbordWatcher();
-            watcher.Create();
+            watcher.Start();
 
 
             Thread tr = new Thread(() =>

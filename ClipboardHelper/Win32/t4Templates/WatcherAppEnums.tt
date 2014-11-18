@@ -1,0 +1,75 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="System.IO" #>
+
+<#@ output extension=".h" #>
+
+<#
+
+//it really not best idea to generate template from C++ 
+//and aftre that do oppisite action, but C++ code shold be linked to C#
+
+var fileName="WatcherTypes";
+
+string text = File.ReadAllText(this.Host.ResolvePath(fileName+".cs"));
+//var text=System.IO.File.ReadAllText(filePath+fileName+".cs");
+
+
+int bracketIndex=0;
+var bracketsToClose= new List<int>();
+var lines=text.Split(new[]{'\r','\n'});
+	foreach (var line in lines){
+
+		var changedLine=line
+		.Replace("enum","enum class")
+		.Replace("public ","")
+		.Replace("}","};");
+
+		if(changedLine.Trim().StartsWith("namespace")){
+			var namespaceDef=changedLine.Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries);
+			var namespaces=namespaceDef[1].Split(new[]{'.'});
+			bracketsToClose.Add(namespaces.Length-1);
+			for(int i=0; i<namespaces.Length;i++){
+				Write("namespace ");
+				Write(namespaces[i]);
+				if(i+1<namespaces.Length)
+					Write("{\r\n");
+			}
+			var lineEnd=changedLine.Split(new string[]{namespaceDef[1]},StringSplitOptions.None);
+			changedLine=lineEnd[1];
+		}
+		else
+			Write(changedLine);
+		
+		if(line.Contains("{")){
+			int ind=0;
+			int nextInd=0;
+			while((nextInd=line.IndexOf('{',ind))>-1){
+				bracketIndex++;
+				ind=nextInd+1;
+			}
+		}
+		if(line.Contains("}")){
+			int ind=0;
+			int nextInd=0;
+			while((nextInd=line.IndexOf('}',ind))>-1){
+				ind=nextInd+1;
+				bracketIndex--;
+			}
+		
+			//-1 will be only if we got namespace close
+			if(bracketIndex==0 && bracketsToClose.Count>0){
+			
+				var count=bracketsToClose[0];
+				bracketsToClose.RemoveAt(0);
+				for(int i=0;i<count;i++)
+					Write("}\r\n");
+			}
+		}
+		if(!String.IsNullOrWhiteSpace(changedLine))
+			Write("\r\n");
+	}
+#>
