@@ -19,19 +19,18 @@ LRESULT MsgWindow::WindProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_COPYDATA:
-		
 		pcData = (PCOPYDATASTRUCT)lParam;
 		sender = (LONG_PTR)wParam;
-		comunicator->WriteInfo("CopyData %p %d %p %d", sender, pcData->cbData, pcData->dwData, pcData->lpData);
+		comunicator->WriteData(MsgType_CopyData,"%p %d %p %d", sender, pcData->cbData, pcData->dwData, pcData->lpData);
 		break;
 	case WM_CLIPBOARDUPDATE:
-		comunicator->WriteInfo("ClipboardUpdate");
+		comunicator->WriteData(MsgType_ClipboardUpdate);
 		break;
 	case WM_DESTROYCLIPBOARD:
-		comunicator->WriteInfo("DestroyClipboard");
+		comunicator->WriteData(MsgType_DestroyClipboard);
 		break;
 	case WM_RENDERFORMAT:
-		comunicator->WriteInfo("RenderFormat %d", wParam);
+		comunicator->WriteData(MsgType_RenderFormat,"%d", wParam);
 		break;
 	}
 
@@ -59,16 +58,7 @@ void MsgWindow::CreateMessageWindow()
 		comunicator->WriteError("CreateWindow");
 	}
 	window_map[messageWindow] = this;
-	auto a = (int)messageWindow;
-	auto b = &messageWindow;
-	printf("WindowHandle %d", a);
-	printf("WindowHandle %d", b);
-	printf("WindowHandle %p", a);
-	printf("WindowHandle %p", b);
-	comunicator->WriteInfo("WindowHandle %p",(int)messageWindow);
-	comunicator->WriteInfo("WindowHandle %d",(int)messageWindow);
-	comunicator->WriteInfo("WindowHandle %p",messageWindow);
-	comunicator->WriteInfo("WindowHandle %d",messageWindow);
+	comunicator->WriteData(MsgType_WindowHandle, "%d", (int)messageWindow);
 }
 
 void MsgWindow::RegisterClipboardListener(){

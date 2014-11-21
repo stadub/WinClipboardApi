@@ -86,11 +86,7 @@
     <Compile Include="Helpers\Enumerable.cs" />
     <Compile Include="Helpers\Strings.cs" />
     <Compile Include="Win32\ClipbordWatcher.cs" />
-    <Compile Include="Win32\t4Templates\WatcherTypes.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>WatcherTypes.tt</DependentUpon>
-    </Compile>
+    <Compile Include="Win32\WatcherEnums.cs" />
     <Compile Include="WinApi\Window.cs" />
     <Compile Include="WinApi\Gdi.cs" />
     <Compile Include="Win32\GlobalMemoryException.cs" />
@@ -104,24 +100,7 @@
     <Compile Include="WinApi\WindowEnums.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Win32\t4Templates\WatcherTypes.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>WatcherTypes.cs</LastGenOutput>
-    </None>
-    <None Include="Win32\t4Templates\WatcherAppEnums.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>WatcherAppEnums.h</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Win32\t4Templates\WatcherAppEnums.h">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>WatcherAppEnums.tt</DependentUpon>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

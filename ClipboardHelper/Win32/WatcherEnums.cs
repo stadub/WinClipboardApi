@@ -1,14 +1,14 @@
 ﻿
 
-//This code was generated from ClipbordWatcherTypes file data
+//TEnums shoud be same as in the ClipbordWatcherTypes.h file
 namespace ClipboardHelper.Win32.ClipbordWatcherTypes
 {
-
-	public enum MsgSeverity{
-	Error=0,
-	Warning=1,
-	Info=2,
-	AppData=3,
+    enum MsgSeverity{
+	Error = 0,
+	Warning = 1,
+	Info = 2,
+	AppData = 3,
+	Debug=4,
 }
 	public enum MsgType{
 	WindowHandle=0,
@@ -16,5 +16,7 @@ namespace ClipboardHelper.Win32.ClipbordWatcherTypes
 	ClipboardUpdate=2,
 	DestroyClipboard=3,
 	RenderFormat=4,
-}}
+}
+
+}
 

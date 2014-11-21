@@ -13,17 +13,10 @@ using ClipboardHelper.Win32.ClipbordWatcherTypes;
 
 namespace ClipboardHelper.Win32
 {
-
   
     public class ClipbordWatcher:IDisposable
     {
-
         public EventHandler<EventArgs> ClipboardContentChanged;
-
-        public ClipbordWatcher()
-        {
-            waitHandle= new ManualResetEvent(false);
-        }
 
         private Process proc;
         public void Start()
@@ -50,27 +43,26 @@ namespace ClipboardHelper.Win32
             string line;
             while ((line=proc.StandardOutput.ReadLine())!=null)
             {
-
                 var data = line.SplitString(':');
-
                 MsgSeverity severity;
                 MsgSeverity.TryParse(data.Item1, out severity);
 
                 switch (severity)
                 {
                     case MsgSeverity.Error:
-                        var err = data.Item2;
-                        var errData=err.SplitString(':');
-                        var errCodeStr = errData.Item1.Replace("ErrCode", "");
-                        var errCode = Int32.Parse(errCodeStr);
-                        Marshal.ThrowExceptionForHR(errCode);
+                        ThrowError(data.Item2);
                         break;
                     case MsgSeverity.Warning:
+                        WriteWarning(data.Item2);
                         break;
                     case MsgSeverity.Info:
+                        WriteInfo(data.Item2);
                         break;
                     case MsgSeverity.AppData:
                         UpdateAppState(data.Item2);
+                        break;
+                    case MsgSeverity.Debug:
+                        WriteDebug(data.Item2);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -79,17 +71,38 @@ namespace ClipboardHelper.Win32
             }
         }
 
+        protected virtual void ThrowError(string errorMessage)
+        {
+            var errData = errorMessage.SplitString(':');
+            var errCodeStr = errData.Item1.Replace("ErrCode", "");
+            var errCode = Int32.Parse(errCodeStr);
+            Marshal.ThrowExceptionForHR(errCode);
+        }
+
+        protected virtual void WriteInfo(string infoMsg)
+        {
+            Debug.Print(infoMsg);
+        }
+        protected virtual void WriteDebug(string debugMsg)
+        {
+            Debug.Print(debugMsg);
+        }
+        protected virtual void WriteWarning(string warningMsg)
+        {
+            Debug.Print(warningMsg);
+        }
 
         private void UpdateAppState(string text)
         {
+            var data = text.SplitString('|');
             MsgType type;
             MsgType.TryParse(data.Item2, out type);
             switch (type)
             {
 
                 case MsgType.WindowHandle:
-                    ParseHwnd(args[1]);
-                    //var handle = new UIntPtr(hwndPtr);
+
+                    var handle = ParseHwnd(text);
                     break;
                 case MsgType.CopyData:
                     break;
@@ -102,6 +115,8 @@ namespace ClipboardHelper.Win32
                     break;
             }
         }
+
+
 
         private IntPtr ParseHwnd(string hwndString)
         {
@@ -117,11 +132,6 @@ namespace ClipboardHelper.Win32
                 yield return Clipboard.SequenceNumber;
             }
         } 
-
-        private void WaitClipboardContentChange()
-        {
-            waitHandle.Set();
-        }
 
         private Task watcherTask;
         public void Create()
