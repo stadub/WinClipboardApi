@@ -90,7 +90,7 @@
     <Compile Include="SpecificationContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClipboardContext.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="ClipboardTest.cs" />
     <Compile Include="ClipbordWatcherTest.cs" />
     <Compile Include="WinformWrapper.cs" />
   </ItemGroup>

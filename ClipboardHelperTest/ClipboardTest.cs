@@ -15,7 +15,7 @@ using Clpbrd=System.Windows.Forms.Clipboard;
 namespace ClipbordHelperTest
 {
     [TestClass]
-    public class UnitTest1
+    public class ClipboardTest
     {
 
         private const string testString = "Lorem ipsum dolor sit amet";
