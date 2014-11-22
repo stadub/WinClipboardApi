@@ -1,0 +1,17 @@
+﻿using System;
+using System.Runtime.Serialization;
+
+namespace ClipboardHelper.Win32
+{
+    [Serializable]
+    public class ClipbordWatcherException : Exception
+    {
+        public ClipbordWatcherException() { }
+
+        public ClipbordWatcherException(string message) : base(message) { }
+
+        public ClipbordWatcherException(string message, Exception inner) : base(message, inner) { }
+
+        protected ClipbordWatcherException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
+}

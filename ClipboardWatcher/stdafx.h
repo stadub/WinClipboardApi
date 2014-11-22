@@ -19,6 +19,6 @@
 #include "Messages.h"
 #include "MsgWindow.h"
 #include "ClipbordWatcherTypes.h"
-#include "../ClipboardHelper/Win32/t4Templates/WatcherAppEnums.h"
+#include "WatcherAppEnums.h"
 
 // TODO: reference additional headers your program requires here

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 using ClipboardHelper.WinApi;
 
@@ -118,7 +118,7 @@ namespace ClipboardHelper.Win32
         private static void ThrowExceptionIfZero(int ptr, string message)
         {
             if (ptr == 0)
-                throw new GlobalMemoryException(message,new System.ComponentModel.Win32Exception());
+                throw new GlobalMemoryException(message,new Win32Exception());
         }
 
         private bool disposed = false;

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Reflection.Emit;
 using System.Text;
-using ClipboardHelper.FormatProviders;
 
 namespace ClipboardHelper
 {

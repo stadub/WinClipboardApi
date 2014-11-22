@@ -1,8 +1,5 @@
-﻿using System;
-using System.Windows.Forms;
-using ClipboardHelper;
+﻿using ClipboardHelper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Clipboard = ClipboardHelper.Clipboard;
 
 namespace ClipboardHelperTest
 {
@@ -12,7 +9,7 @@ namespace ClipboardHelperTest
         public override void Given()
         {
             base.Given();
-            clipboardApi = new Clipboard();
+            clipboardApi = Clipboard.CreateReadOnly();
         }
 
         public override void When()
@@ -26,7 +23,7 @@ namespace ClipboardHelperTest
         [TestMethod]
         public void ShouldGetClipboardText()
         {
-            clipboardApi.OpenRead();
+            clipboardApi.OpenReadOnly();
             clipboardApi.Close();
         }
     }

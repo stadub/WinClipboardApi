@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace ClipboardHelper.Win32
@@ -15,13 +16,13 @@ namespace ClipboardHelper.Win32
         public static void GuardZeroHandle(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
-                throw new System.ComponentModel.Win32Exception();
+                throw new Win32Exception();
         }
 
         public static void GuardZeroHandle(UIntPtr ptr)
         {
             if (ptr == UIntPtr.Zero)
-                throw new System.ComponentModel.Win32Exception();
+                throw new Win32Exception();
         }
     }
 }

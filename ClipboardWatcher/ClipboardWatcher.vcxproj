@@ -79,12 +79,12 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ClipboardHelper\Win32\t4Templates\WatcherAppEnums.h" />
     <ClInclude Include="ClipbordWatcherTypes.h" />
     <ClInclude Include="Messages.h" />
     <ClInclude Include="MsgWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WatcherAppEnums.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClipboardWatcher.cpp" />

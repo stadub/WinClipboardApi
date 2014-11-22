@@ -84,7 +84,9 @@
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="FormatProviders\SkypeFormatProvider.cs" />
     <Compile Include="Helpers\Enumerable.cs" />
+    <Compile Include="Helpers\GenericEventArgs.cs" />
     <Compile Include="Helpers\Strings.cs" />
+    <Compile Include="Win32\ClipbordWatcherException.cs" />
     <Compile Include="Win32\ClipbordWatcher.cs" />
     <Compile Include="Win32\WatcherEnums.cs" />
     <Compile Include="WinApi\Window.cs" />
@@ -111,6 +113,7 @@
   </Target>
   -->
   <Import Project="$(SolutionDir)\BuildTargets.target" />
+  <Import Project="$(SolutionDir)\BuildActions.target" />
   <!--<Target Name="TargetsGlue" DependsOnTargets="DetectWinVersionConstants" BeforeTargets="BeforeBuild">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);$(WinVersion)</DefineConstants>

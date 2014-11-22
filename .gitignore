@@ -3,5 +3,11 @@
 ################################################################################
 
 *.suo
+*.sdf
+*.opensdf
+*.sln.DotSettings.user
+*proj.user
 bin/
 obj/
+Debug/
+ipch/

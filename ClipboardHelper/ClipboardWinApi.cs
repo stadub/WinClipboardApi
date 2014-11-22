@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using ClipboardHelper.FormatProviders;
 using ClipboardHelper.Win32;
@@ -13,40 +13,63 @@ namespace ClipboardHelper
     {
         private bool disposed;
 
-        private static readonly IntPtr notOwned = new IntPtr(-1);
+        private bool Owned;
 
         private IntPtr ClipboardOwner;
-        public Clipboard()
-        {
-            ClipboardOwner=new IntPtr(-1);
 
-            var formats=Enum.GetValues(typeof (StandartClipboardFormats));
+        protected Clipboard(IntPtr ownerHwnd)
+        {
+            var formats = Enum.GetValues(typeof(StandartClipboardFormats));
             foreach (StandartClipboardFormats format in formats)
             {
                 var formatIdWraper = new StandardFormatIdWraper(format);
 
                 registeredFormats.Add(formatIdWraper.FormatName, formatIdWraper.FormatId);
             }
+
+            ClipboardOwner = ownerHwnd;
         }
 
-        public void OpenRead()
+        protected Clipboard()
+            : this(IntPtr.Zero)
         {
-            this.Open(IntPtr.Zero);
         }
 
-        public void Open(IntPtr hWnd)
+        public static Clipboard CreateReadOnly()
         {
-            if (ClipboardOwner != notOwned)
+            return new Clipboard();
+        }
+
+        public static Clipboard CreateReadWrite(IntPtr ownerHwnd)
+        {
+            return new Clipboard(ownerHwnd);
+        }
+
+        public void OpenReadOnly()
+        {
+            OpenInt();
+        }
+
+        public void Open()
+        {
+            if (ClipboardOwner == IntPtr.Zero)
+                throw new OpenClipboardException("Empty window handle is allowed only for Read only mode.To be able to write to clipboard Clipboard(IntPtr ownerHwnd) constructor should be used.");
+            OpenInt();
+        }
+
+        protected void OpenInt()
+        {
+            if (Owned)
                 throw new ClipboardOpenedException("Clipboard allready opened");
-
-            var opened = OpenClipboard(hWnd);
+            Owned = true;
+            var opened = OpenClipboard(ClipboardOwner);
             if (!opened)
             {
                 var errcode = Marshal.GetLastWin32Error();
-                var innerException=Marshal.GetExceptionForHR(errcode);
-                throw new OpenClipboardException(new System.ComponentModel.Win32Exception());
+                var innerException = Marshal.GetExceptionForHR(errcode);
+                Owned = false;
+                throw new OpenClipboardException(new Win32Exception());
             }
-            ClipboardOwner = hWnd;
         }
 
         public void Clear()
@@ -54,16 +77,16 @@ namespace ClipboardHelper
             GuardClipbordOpened();
             if (!EmptyClipboard())
             {
-                throw new ClipboardException("Error clearing clipboard", ExceptionHelpers.GetLastWin32Exception());
+                throw new ClipboardException("Can't clear clipboard content", ExceptionHelpers.GetLastWin32Exception());
             }
         }
 
         private void GuardClipbordOpened(bool checkWindowHandle=false)
         {
-            if (ClipboardOwner == notOwned)
-                throw new ClipboardClosedException("Cannot perform operation on closed clipbord");
+            if (!Owned)
+                throw new ClipboardClosedException("Operation cannot be performed on the closed clipbord");
             if (checkWindowHandle && ClipboardOwner == IntPtr.Zero)
-                throw new ClipboardClosedException("This operation reqare clipboard to be opened with set hwnd.");
+                throw new ClipboardClosedException("This operation requare clipboard oened in Write mode.");
         }
 
 
@@ -71,13 +94,13 @@ namespace ClipboardHelper
         {
             var formatId = GetFormatId(provider.FormatId);
             if (!IsDataAvailable(provider))
-                throw new ClipboardDataException("No data avalible in selected format", ExceptionHelpers.GetLastWin32Exception());
+                throw new ClipboardDataException("There no data of selected format in the Clipboard", ExceptionHelpers.GetLastWin32Exception());
 
             GuardClipbordOpened();
 
             IntPtr memHandle = GetClipboardData(formatId);
             if (memHandle == IntPtr.Zero)
-                throw new ClipboardDataException("Error receiving clipbord data", ExceptionHelpers.GetLastWin32Exception());
+                throw new ClipboardDataException("Can't receive data from clipbord", ExceptionHelpers.GetLastWin32Exception());
 
             try
             {
@@ -93,7 +116,7 @@ namespace ClipboardHelper
             }
             catch (GlobalMemoryException exception)
             {
-                throw new ClipboardDataException("Error receiving data from clipbord",exception);
+                throw new ClipboardDataException("Can't receive data from clipbord",exception);
             }
         }
 
@@ -126,7 +149,7 @@ namespace ClipboardHelper
             }
             catch (GlobalMemoryException exception)
             {
-                throw new ClipboardDataException("Error saveing data to clipbord", exception);
+                throw new ClipboardDataException("Can't save data to clipbord", exception);
             }
         }
 
@@ -161,13 +184,6 @@ namespace ClipboardHelper
         [DllImport("user32.dll")]
         private static extern bool EmptyClipboard();
 
-        public static uint SequenceNumber
-        {
-            get { return GetClipboardSequenceNumber(); }
-        }
-
-        [DllImport("user32.dll")]
-        private static extern uint GetClipboardSequenceNumber();
 
         [DllImport("user32.dll",SetLastError = true)]
         private static extern IntPtr GetClipboardData(uint uFormat);
@@ -239,7 +255,7 @@ namespace ClipboardHelper
 
         public void Close()
         {
-            if (ClipboardOwner == notOwned)
+            if (!Owned)
                 return;
             Dispose();
         }
@@ -259,7 +275,7 @@ namespace ClipboardHelper
                 }
                 disposed = true;
             }
-            if (ClipboardOwner != notOwned)
+            if (Owned)
                 CloseClipboard();
             ClipboardOwner = new IntPtr(-1);
         }

@@ -28,7 +28,12 @@ void Messages::WriteMsg(MsgSeverity msgType, std::string format, va_list args)
 	case MsgSeverity::Warning:
 		str_msgType.assign(MsgSeverity_Warning);
 		break;
-
+	case MsgSeverity::Debug:
+		str_msgType.assign(MsgSeverity_Debug);
+		break;
+	default:
+		str_msgType.assign("Unknown");
+		str_msgType.push_back(static_cast<char>(static_cast<int>(msgType)+48));//convert to acsii number char
 	}
 	WriteOut(str_msgType, message);
 }

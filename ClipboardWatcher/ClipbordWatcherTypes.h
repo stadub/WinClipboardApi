@@ -2,7 +2,7 @@
 #define MsgSeverity_Error "Error"
 #define MsgSeverity_Warning "Warning"
 #define MsgSeverity_Info "Info"
-#define MsgSeverity_AppData "Data"
+#define MsgSeverity_AppData "AppData"
 #define MsgSeverity_Debug "Debug"
 
 

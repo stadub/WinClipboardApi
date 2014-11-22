@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,22 +11,58 @@ using ClipboardHelper.Win32.ClipbordWatcherTypes;
 
 namespace ClipboardHelper.Win32
 {
-  
+    public struct CopyData
+    {
+        public IntPtr Sender;
+        public UIntPtr PointerData;
+        public long Data;
+        public IntPtr VoidData;
+
+    }
     public class ClipbordWatcher:IDisposable
     {
-        public EventHandler<EventArgs> ClipboardContentChanged;
+        private const string WatcherProcessName = "ClipboardWatcher.exe";
+        public EventHandler<EventArgs> OnClipboardContentChanged;
+        public EventHandler<EventArgs> OnClipboardContentDestroy;
+        public EventHandler<EventArgs<int>> OnRenderFormatRequested;
+        public EventHandler<EventArgs<CopyData>> OnClipboarCopyDataSent;
+        public EventHandler<EventArgs<IntPtr>> OnMessageWindowHwndReceived;
 
+        private IntPtr windowHandle;
+        private ManualResetEvent waitHandle;
         private Process proc;
-        public void Start()
-        {
-            //var procStartInfo = new ProcessStartInfo("ClipboardWatcher.exe");
-            var procStartInfo = new ProcessStartInfo(
-@"C:\Users\Dima\Documents\Visual Studio 2013\Projects\ClipbordHelper\Debug\ClipboardWatcher.exe");
-            //procStartInfo.CreateNoWindow = true;
-            procStartInfo.RedirectStandardOutput= true;
-            procStartInfo.RedirectStandardInput= true;
-            procStartInfo.UseShellExecute = false;
 
+        private Task watcherTask;
+
+        public ClipbordWatcher()
+        {
+            OnClipboardContentChanged += ClipboardContentChanged;
+            waitHandle = new ManualResetEvent(false);
+        }
+
+        public static bool WatcherAllreadyRan()
+        {
+            return Process.GetProcessesByName(WatcherProcessName).Any();
+        }
+
+        public void Start(bool throwIfAnotherListenerStarted = false)
+        {
+            if (proc != null) throw new ClipbordWatcherException("Cannot start second listener istance");
+
+            if (throwIfAnotherListenerStarted && WatcherAllreadyRan())
+                throw new ClipbordWatcherException(
+                    "Other instance of the Clipboard watcher already started. Close another one first");
+
+            watcherTask=Task.Factory.StartNew(() =>
+            {
+                StartMessageWindow();
+                StartListenLoop();
+            });
+        }
+
+
+        protected virtual string CreateClassName()
+        {
             var classNameBuilder= new StringBuilder(AppDomain.CurrentDomain.FriendlyName);
             for (int i = 0; i < classNameBuilder.Length; i++)
             {
@@ -36,38 +70,54 @@ namespace ClipboardHelper.Win32
                 if (!Char.IsLetterOrDigit(c))
                     classNameBuilder[i] = '_';
             }
+            return classNameBuilder.ToString();
+        }
 
-            procStartInfo.Arguments = classNameBuilder.ToString();
-            proc=Process.Start(procStartInfo);
+        private void StartMessageWindow()
+        {
 
+            var procStartInfo = new ProcessStartInfo(WatcherProcessName);
+            //procStartInfo.CreateNoWindow = true;
+            procStartInfo.RedirectStandardOutput = true;
+            procStartInfo.RedirectStandardInput = true;
+            procStartInfo.UseShellExecute = false;
+
+            procStartInfo.Arguments = CreateClassName();
+            proc = Process.Start(procStartInfo);
+        }
+
+        protected void StartListenLoop(){
             string line;
             while ((line=proc.StandardOutput.ReadLine())!=null)
             {
-                var data = line.SplitString(':');
-                MsgSeverity severity;
-                MsgSeverity.TryParse(data.Item1, out severity);
+                Tuple<string, string> data = line.SplitString(':');
 
-                switch (severity)
-                {
-                    case MsgSeverity.Error:
-                        ThrowError(data.Item2);
-                        break;
-                    case MsgSeverity.Warning:
-                        WriteWarning(data.Item2);
-                        break;
-                    case MsgSeverity.Info:
-                        WriteInfo(data.Item2);
-                        break;
-                    case MsgSeverity.AppData:
-                        UpdateAppState(data.Item2);
-                        break;
-                    case MsgSeverity.Debug:
-                        WriteDebug(data.Item2);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-               
+                HandleListenMessage(data.Item1, data.Item2);
+            }
+        }
+
+        protected virtual void HandleListenMessage(string type,string data)
+        {
+            MsgSeverity severity;
+            Enum.TryParse(type, true, out severity);
+
+            switch (severity)
+            {
+                case MsgSeverity.Error:
+                    ThrowError(data);
+                    break;
+                case MsgSeverity.Warning:
+                    WriteWarning(data);
+                    break;
+                case MsgSeverity.Info:
+                    WriteInfo(data);
+                    break;
+                case MsgSeverity.AppData:
+                    UpdateAppState(data);
+                    break;
+                case MsgSeverity.Debug:
+                    WriteDebug(data);
+                    break;
             }
         }
 
@@ -96,48 +146,88 @@ namespace ClipboardHelper.Win32
         {
             var data = text.SplitString('|');
             MsgType type;
-            MsgType.TryParse(data.Item2, out type);
+            Enum.TryParse(data.Item1, out type);
             switch (type)
             {
 
                 case MsgType.WindowHandle:
-
-                    var handle = ParseHwnd(text);
+                    windowHandle = ParseIntPtr(data.Item2);
+                    if (OnMessageWindowHwndReceived != null)
+                        OnMessageWindowHwndReceived(this, new EventArgs<IntPtr>(windowHandle));
                     break;
                 case MsgType.CopyData:
+                    var args=data.Item2.Split(' ');
+                    var copyData = new CopyData
+                    {
+                        Sender = ParseIntPtr(args[0]),
+                        Data = long.Parse(args[1]),
+                        PointerData = ParseUIntPtr(args[2]),
+                        VoidData = ParseIntPtr(args[4])
+                    };
+                    if (OnClipboarCopyDataSent != null) 
+                        OnClipboarCopyDataSent(this, new EventArgs<CopyData>(copyData));
                     break;
                 case MsgType.ClipboardUpdate:
-                    if (ClipboardContentChanged != null) ClipboardContentChanged(this, new EventArgs());
+                        OnClipboardContentChanged(this, EventArgs.Empty);
                     break;
                 case MsgType.DestroyClipboard:
+                    if (OnClipboardContentDestroy != null) 
+                        OnClipboardContentDestroy(this,EventArgs.Empty);
                     break;
                 case MsgType.RenderFormat:
+                    var format = Int32.Parse(data.Item2);
+                    if (OnRenderFormatRequested != null) 
+                        OnRenderFormatRequested(this, new EventArgs<int>(format));
                     break;
             }
         }
 
 
 
-        private IntPtr ParseHwnd(string hwndString)
+        private IntPtr ParseIntPtr(string ptrString)
         {
-            var hwndPtr = Int32.Parse(hwndString,NumberStyles.AllowHexSpecifier);
-            return new IntPtr(hwndPtr);
+            if(string.IsNullOrWhiteSpace(ptrString))
+                return IntPtr.Zero;
+            var ptr = Int32.Parse(ptrString);
+            return new IntPtr(ptr);
         }
-        private ManualResetEvent waitHandle;
+
+        private UIntPtr ParseUIntPtr(string ptrString)
+        {
+            if (string.IsNullOrWhiteSpace(ptrString))
+                return UIntPtr.Zero;
+            var ptr = UInt32.Parse(ptrString);
+            return new UIntPtr(ptr);
+        }
+
         public IEnumerable<uint> WaitClipboardData()
         {
             while (!disposed)
             {
                 WaitHandle.WaitAny(new WaitHandle[] {waitHandle});
-                yield return Clipboard.SequenceNumber;
+                yield return SequenceNumber;
             }
-        } 
+        }
 
-        private Task watcherTask;
-        public void Create()
+        private void ClipboardContentChanged(object sender, EventArgs eventArgs)
         {
-            
+            if(waitHandle!=null)waitHandle.Set();
+        }
 
+        public static uint SequenceNumber
+        {
+            get { return GetClipboardSequenceNumber(); }
+        }
+
+        [DllImport("user32.dll")]
+        private static extern uint GetClipboardSequenceNumber();
+
+        public void Stop()
+        {
+            if (proc == null)
+            {
+                proc = Process.GetProcesses(WatcherProcessName).FirstOrDefault();
+            }
         }
 
         public void Dispose()

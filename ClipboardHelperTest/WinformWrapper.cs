@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Net.Mime;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ClipboardHelperTest
@@ -68,6 +68,16 @@ namespace ClipboardHelperTest
                 }
                 disposed = true;
             }
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+
+        private const int WM_COPYDATA = 0x004A;
+
+        public void SendCopyDataMessage(IntPtr hWnd,IntPtr wParam, IntPtr lParam)
+        {
+            SendMessage(hWnd,WM_COPYDATA, wParam, lParam);
         }
     }
 }

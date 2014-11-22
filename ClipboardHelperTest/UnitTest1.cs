@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClipboardHelper;
 using ClipboardHelper.FormatProviders;
@@ -29,8 +25,8 @@ namespace ClipbordHelperTest
         {
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
             Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText), testString);
-            var clipboard = new Clipboard();
-            clipboard.OpenRead();
+            var clipboard =Clipboard.CreateReadOnly();
+            clipboard.OpenReadOnly();
             clipboard.Clear();
             clipboard.Close();
             Assert.IsTrue(!Clpbrd.ContainsText());
@@ -43,12 +39,12 @@ namespace ClipbordHelperTest
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
             Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText),testString);
             string data;
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadOnly())
             {
                 var provider = new UnicodeTextProvider();
                 var dataAvalable = clipboard.IsDataAvailable(provider);
                 Assert.IsTrue(dataAvalable);
-                clipboard.OpenRead();
+                clipboard.OpenReadOnly();
                 data = clipboard.GetData(provider);
                 clipboard.Close();
             }
@@ -63,10 +59,10 @@ namespace ClipbordHelperTest
             wrapper.CreateWindow();
             Thread.Sleep(100);
 
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadWrite(wrapper.Handle))
             {
                 var provider = new UnicodeTextProvider();
-                clipboard.Open(wrapper.Handle);
+                clipboard.Open();
                 clipboard.Clear();
                 clipboard.SetData(testString,provider);
                 clipboard.Close();
@@ -83,9 +79,9 @@ namespace ClipbordHelperTest
             //wrapper.CreateWindow();
             //Thread.Sleep(100);
             IEnumerable<IClipbordFormatProvider> formats;
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadOnly())
             {
-                clipboard.OpenRead();
+                clipboard.OpenReadOnly();
 
                 formats = clipboard.GetAvalibleFromats(new []{new UnicodeTextProvider()}).ToList();
                 clipboard.Close();
@@ -101,9 +97,9 @@ namespace ClipbordHelperTest
             //wrapper.CreateWindow();
             //Thread.Sleep(100);
             IList<IClipbordFormatProvider> formats;
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadOnly())
             {
-                clipboard.OpenRead();
+                clipboard.OpenReadOnly();
 
                 formats = clipboard.GetAvalibleFromats(new IClipbordFormatProvider<int>[] { }).ToList();
                 clipboard.Close();
@@ -115,9 +111,9 @@ namespace ClipbordHelperTest
         [ExpectedException(typeof(ClipboardClosedException))]
         public void ShoudlThrowClipboardClosedExceptionWhenClipboardNotOpened()
         {
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadOnly())
             {
-                //clipboard.OpenRead();
+                //clipboard.OpenReadOnly();
 
                 var formats=clipboard.GetAvalibleFromats(new[] { new UnicodeTextProvider() });
                 //clipboard.Close();
@@ -128,9 +124,9 @@ namespace ClipbordHelperTest
         [ExpectedException(typeof(ClipboardClosedException))]
         public void ShoudlThrowClipboardClosedExceptionWhenTryingToEnumerateAfterClose()
         {
-            using (var clipboard = new Clipboard())
+            using (var clipboard = Clipboard.CreateReadOnly())
             {
-                clipboard.OpenRead();
+                clipboard.OpenReadOnly();
 
                 var formats=clipboard.GetAvalibleFromats(new[] { new UnicodeTextProvider() });
                 clipboard.Close();
@@ -270,30 +266,6 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
 
         }
 
-        [TestMethod]
-        public void WatcherTest()
-        {
-            ClipbordWatcher watcher = new ClipbordWatcher();
-            watcher.Start();
-
-
-            Thread tr = new Thread(() =>
-            {
-                Thread.Sleep(100);
-                Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
-            });
-            tr.SetApartmentState(ApartmentState.STA);
-            tr.Start();
-
-
-            foreach (var a in  watcher.WaitClipboardData())
-            {
-                
-            }
-           
-
-
-        }
 
     }
     
