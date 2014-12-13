@@ -1,0 +1,11 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+	<Target Name="CopyWatcherOut" BeforeTargets="AfterBuild">
+		<ItemGroup>
+			<ClipboardWatcherOut Include="$(SolutionDir)$(Configuration)\*.*"/>
+		</ItemGroup>
+		<Copy
+			SourceFiles="@(ClipboardWatcherOut)"
+			DestinationFolder="$(OutputPath)"/>
+		<Message Text='Files "@(ClipboardWatcherOut)" copied to "$(OutputPath)"' Importance="High"/>
+	</Target>
+</Project>
