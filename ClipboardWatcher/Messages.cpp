@@ -16,8 +16,11 @@ void Messages::WriteMsg(MsgSeverity msgType, std::string format, va_list args)
 	delete(buffer);
 	std::string str_msgType;
 	switch (msgType){
-	case MsgSeverity::AppData:
-		str_msgType.assign(MsgSeverity_AppData);
+	case MsgSeverity::SendData:
+		str_msgType.assign(MsgSeverity_SendData);
+		break;
+	case MsgSeverity::PostData:
+		str_msgType.assign(MsgSeverity_PostData);
 		break;
 	case MsgSeverity::Error:
 		str_msgType.assign(MsgSeverity_Error);
@@ -57,16 +60,29 @@ void Messages::WriteError(const std::string errFunction, std::string format, ...
 	va_end(args);
 }
 
-void Messages::WriteData(std::string data){
-	WriteData(data, "");
+void Messages::PostData(std::string data){
+	PostData(data, "");
 }
-void Messages::WriteData(std::string data,std::string format, ...){
+void Messages::PostData(std::string data, std::string format, ...){
 	std::ostringstream msgStream;
 	msgStream << data << "|" << format;
 	va_list args;
 	va_start(args, format);
-	WriteMsg(MsgSeverity::AppData, msgStream.str(), args);
+	WriteMsg(MsgSeverity::PostData, msgStream.str(), args);
 	va_end(args);
+}
+
+void Messages::SendData(std::string data){
+	SendData(data, "");
+}
+void Messages::SendData(std::string data,std::string format, ...){
+	std::ostringstream msgStream;
+	msgStream << data << "|" << format;
+	va_list args;
+	va_start(args, format);
+	WriteMsg(MsgSeverity::SendData, msgStream.str(), args);
+	va_end(args);
+	ReadData(data);
 }
 
 void Messages::WriteError(const std::string errFunction){
@@ -82,4 +98,12 @@ void Messages::WriteDebug(std::string format, ...){
 	va_start(args, format);
 	WriteMsg(MsgSeverity::Debug, format, args);
 	va_end(args);
+}
+
+void Messages::ReadData(const std::string data){
+	std::string line;
+	do
+	{
+		std::getline(std::cin, line);
+	} while (line != data);
 }

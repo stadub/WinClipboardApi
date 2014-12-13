@@ -27,6 +27,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	window.InitWindowClass(windowClassName);
 	window.CreateMessageWindow();
 	window.RegisterClipboardListener();
+	window.CreateWatchDogTimer();
 	window.ChagngeMessageFilter();
 	window.StartMainLoop();
 

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace ClipboardHelper
+namespace ClipboardHelper.FormatProviders
 {
     public interface IClipbordFormatProvider<T> : IClipbordFormatProvider
     {

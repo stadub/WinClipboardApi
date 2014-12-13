@@ -1,5 +1,6 @@
 
 #include "stdafx.h"
+#define WM_PING                         0x0420
 
 std::map<HWND, MsgWindow*> MsgWindow::window_map = std::map<HWND, MsgWindow*>();
 
@@ -16,24 +17,47 @@ LRESULT MsgWindow::WindProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	PCOPYDATASTRUCT pcData;
 	LONG_PTR sender;
+	DWORD sequenceNumber;
 	switch (uMsg)
 	{
 	case WM_COPYDATA:
 		pcData = (PCOPYDATASTRUCT)lParam;
 		sender = (LONG_PTR)wParam;
-		comunicator->WriteData(MsgType_CopyData,"%p %d %p %d", sender, pcData->cbData, pcData->dwData, pcData->lpData);
+		comunicator->PostData(MsgType_CopyData,"%p %d %p %d", sender, pcData->cbData, pcData->dwData, pcData->lpData);
 		break;
 	case WM_CLIPBOARDUPDATE:
-		comunicator->WriteData(MsgType_ClipboardUpdate);
+		sequenceNumber=GetClipboardSequenceNumber();
+		comunicator->PostData(MsgType_ClipboardUpdate, "%d", sequenceNumber);
 		break;
 	case WM_DESTROYCLIPBOARD:
-		comunicator->WriteData(MsgType_DestroyClipboard);
+		comunicator->PostData(MsgType_DestroyClipboard);
 		break;
 	case WM_RENDERFORMAT:
-		comunicator->WriteData(MsgType_RenderFormat,"%d", wParam);
+		comunicator->SendData(MsgType_RenderFormat, "%d", wParam);
+		break;
+	case WM_RENDERALLFORMATS:
+		comunicator->SendData(MsgType_RenderAllFormats);
+		break;
+
+	case WM_CLOSE:
+		comunicator->WriteDebug("Closing message window");
+		DestroyWindow(messageWindow);
+		return 0;
+	case WM_TIMER:
+		if (keepAlive<0)
+			DestroyWindow(messageWindow);
+		keepAlive --;
+		break;
+	case WM_PING:
+		keepAlive=5;//wait 10 seconds before be killed by timer
+		break;
+	case WM_DESTROY:
+		int resultCode = 0;
+		if (keepAlive<0) 
+			resultCode=WM_TIMER;
+		PostQuitMessage(resultCode);
 		break;
 	}
-
 	return DefWindowProc(messageWindow, uMsg, wParam, lParam);
 }
 
@@ -58,7 +82,12 @@ void MsgWindow::CreateMessageWindow()
 		comunicator->WriteError("CreateWindow");
 	}
 	window_map[messageWindow] = this;
-	comunicator->WriteData(MsgType_WindowHandle, "%d", (int)messageWindow);
+	comunicator->PostData(MsgType_WindowHandle, "%d", (int)messageWindow);
+}
+
+void MsgWindow::CreateWatchDogTimer()
+{
+	SetTimer(messageWindow, NULL, 2000, nullptr);
 }
 
 void MsgWindow::RegisterClipboardListener(){

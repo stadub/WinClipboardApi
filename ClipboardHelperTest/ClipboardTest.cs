@@ -21,7 +21,7 @@ namespace ClipbordHelperTest
         private const string testString = "Lorem ipsum dolor sit amet";
 
         [TestMethod]
-        public void ShoudlClearClipbord()
+        public void ShouldClearClipbord()
         {
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
             Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText), testString);
@@ -33,7 +33,7 @@ namespace ClipbordHelperTest
 
         }
         [TestMethod]
-        public void ShoudlReceiveUnicodeStringFromClipbord()
+        public void ShouldReceiveUnicodeStringFromClipbord()
         {
             
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
@@ -53,13 +53,13 @@ namespace ClipbordHelperTest
         }
 
         [TestMethod]
-        public void ShoudlSaveToClipboardUnicodeString()
+        public void ShouldSaveToClipboardUnicodeString()
         {
             WinformWrapper wrapper = new WinformWrapper();
             wrapper.CreateWindow();
             Thread.Sleep(100);
 
-            using (var clipboard = Clipboard.CreateReadWrite(wrapper.Handle))
+            using (var clipboard = Clipboard.CreateReadWrite(wrapper))
             {
                 var provider = new UnicodeTextProvider();
                 clipboard.Open();
@@ -72,12 +72,9 @@ namespace ClipbordHelperTest
         }
 
         [TestMethod]
-        public void ShoudlReceiveUnicodeClipbordFormat()
+        public void ShouldReceiveUnicodeClipbordFormat()
         {
             Clpbrd.SetText("123", TextDataFormat.UnicodeText);
-            //WinformWrapper wrapper= new WinformWrapper();
-            //wrapper.CreateWindow();
-            //Thread.Sleep(100);
             IEnumerable<IClipbordFormatProvider> formats;
             using (var clipboard = Clipboard.CreateReadOnly())
             {
@@ -90,12 +87,9 @@ namespace ClipbordHelperTest
         }
         
         [TestMethod]
-        public void ShoudlReturnUncnowneClipbordFormat()
+        public void ShouldReturnUncnowneClipbordFormat()
         {
             Clpbrd.SetText("123", TextDataFormat.UnicodeText);
-            //WinformWrapper wrapper= new WinformWrapper();
-            //wrapper.CreateWindow();
-            //Thread.Sleep(100);
             IList<IClipbordFormatProvider> formats;
             using (var clipboard = Clipboard.CreateReadOnly())
             {
@@ -109,7 +103,7 @@ namespace ClipbordHelperTest
 
         [TestMethod]
         [ExpectedException(typeof(ClipboardClosedException))]
-        public void ShoudlThrowClipboardClosedExceptionWhenClipboardNotOpened()
+        public void ShouldThrowClipboardClosedExceptionWhenClipboardNotOpened()
         {
             using (var clipboard = Clipboard.CreateReadOnly())
             {
@@ -122,7 +116,7 @@ namespace ClipbordHelperTest
         }
         [TestMethod]
         [ExpectedException(typeof(ClipboardClosedException))]
-        public void ShoudlThrowClipboardClosedExceptionWhenTryingToEnumerateAfterClose()
+        public void ShouldThrowClipboardClosedExceptionWhenTryingToEnumerateAfterClose()
         {
             using (var clipboard = Clipboard.CreateReadOnly())
             {
@@ -156,7 +150,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
 <P id=Text2> Praesent eu turpis sem.</P><!--EndFragment--></TD></TR></TBODY></TABLE></BODY></HTML> ";
 
         [TestMethod]
-        public void ShoudlDeserializeSampleHtmlData()
+        public void ShouldDeserializeSampleHtmlData()
         {
             UnicodeStringSerializer serializer=new UnicodeStringSerializer();
             var bytes=serializer.Serialize(TextHtmlData);
@@ -180,7 +174,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
           | RegexOptions.Compiled
           );
         [TestMethod]
-        public void ShoudlSerializeSampleHtmlData()
+        public void ShouldSerializeSampleHtmlData()
         {
             string[] results = htmlDoc.Split(TextHtmlData);
 
@@ -216,7 +210,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             "</quote>";
 
         [TestMethod]
-        public void ShoudlSerializeSampleSkypeQuoteData()
+        public void ShouldSerializeSampleSkypeQuoteData()
         {
 
             SkypeQuote data = new SkypeQuote
@@ -238,7 +232,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             Assert.AreEqual(skypeQuote, text);
         }
         [TestMethod]
-        public void ShoudlDeserializeSampleSkypeQuoteData()
+        public void ShouldDeserializeSampleSkypeQuoteData()
         {
             UnicodeStringSerializer serializer = new UnicodeStringSerializer();
             var bytes = serializer.Serialize(skypeQuote);

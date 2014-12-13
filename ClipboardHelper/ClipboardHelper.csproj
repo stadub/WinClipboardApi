@@ -83,23 +83,21 @@
     <Compile Include="FormatProviders\ClipboardFormatProviders.cs" />
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="FormatProviders\SkypeFormatProvider.cs" />
+    <Compile Include="Helpers\AsyncResultBase.cs" />
     <Compile Include="Helpers\Enumerable.cs" />
     <Compile Include="Helpers\GenericEventArgs.cs" />
     <Compile Include="Helpers\Strings.cs" />
-    <Compile Include="Win32\ClipbordWatcherException.cs" />
-    <Compile Include="Win32\ClipbordWatcher.cs" />
-    <Compile Include="Win32\WatcherEnums.cs" />
-    <Compile Include="WinApi\Window.cs" />
-    <Compile Include="WinApi\Gdi.cs" />
-    <Compile Include="Win32\GlobalMemoryException.cs" />
-    <Compile Include="Win32\Win32Helpers.cs" />
-    <Compile Include="Win32\GlobalMemory.cs" />
-    <Compile Include="StandartClipbordFormats.cs" />
+    <Compile Include="Watcher\ClipbordWatcherException.cs" />
+    <Compile Include="Watcher\ClipbordWatcher.cs" />
+    <Compile Include="Watcher\WatcherEnums.cs" />
+    <Compile Include="WinApi\GlobalMemoryException.cs" />
+    <Compile Include="Helpers\ExceptionHelpers.cs" />
+    <Compile Include="WinApi\GlobalMemory.cs" />
+    <Compile Include="FormatProviders\StandartClipbordFormats.cs" />
     <Compile Include="ClipboardException.cs" />
-    <Compile Include="ClipboardWinApi.cs" />
+    <Compile Include="Clipboard.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WinApi\Memory.cs" />
-    <Compile Include="WinApi\WindowEnums.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

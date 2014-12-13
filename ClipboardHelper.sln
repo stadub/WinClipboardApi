@@ -4,8 +4,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardHelper", "ClipboardHelper\ClipboardHelper.csproj", "{70180DF9-FB5C-4BD1-AF05-827405CD7EB3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9B6984AF-177E-402F-A6E4-ECC0879684F7} = {9B6984AF-177E-402F-A6E4-ECC0879684F7}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardHelperTest", "ClipboardHelperTest\ClipboardHelperTest.csproj", "{3E9D42BE-4D6E-4F9B-8FF7-CA6864F7C911}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9B6984AF-177E-402F-A6E4-ECC0879684F7} = {9B6984AF-177E-402F-A6E4-ECC0879684F7}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D973F5F8-1E39-4F8F-A11C-0335004FB360}"
 	ProjectSection(SolutionItems) = preProject

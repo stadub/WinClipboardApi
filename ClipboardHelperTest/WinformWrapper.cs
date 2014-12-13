@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using ClipboardHelper.Watcher;
+using ClipboardHelper.Win32;
 
 namespace ClipboardHelperTest
 {
-    internal class WinformWrapper : IDisposable
+    internal class WinformWrapper : IDisposable,IClipbordMessageProvider
     {
         private FormWrapper form;
         private bool disposed;
@@ -50,7 +52,7 @@ namespace ClipboardHelperTest
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        public IntPtr Handle { get { return form.Handle; } }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)
@@ -78,6 +80,11 @@ namespace ClipboardHelperTest
         public void SendCopyDataMessage(IntPtr hWnd,IntPtr wParam, IntPtr lParam)
         {
             SendMessage(hWnd,WM_COPYDATA, wParam, lParam);
+        }
+
+        public IntPtr WindowHandle
+        {
+            get { return form.Handle; }
         }
     }
 }

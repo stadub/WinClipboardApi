@@ -1,6 +1,10 @@
-﻿using System.Threading;
+﻿using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClipboardHelper;
+using ClipboardHelper.Watcher;
 using ClipboardHelper.Win32;
 using ClipboardHelperTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,49 +18,173 @@ namespace ClipbordHelperTest
     {
         private const string testString = "Lorem ipsum dolor sit amet";
 
-        [TestMethod]
-        public void WatcherTest()
+        public ClipbordWatcher StartWatcher()
         {
-            ClipbordWatcher watcher = new ClipbordWatcher();
-            watcher.Start();
+            var watcher = new ClipbordWatcher();
+            Clpbrd.Clear();
+            watcher.StartListen();
+            return watcher;
+        }
 
-            watcher.OnClipboarCopyDataSent += (sender, args) => { };
-            watcher.OnClipboardContentChanged += (sender, args) => { };
-            watcher.OnClipboardContentDestroy += (sender, args) => { };
-            watcher.OnMessageWindowHwndReceived += (sender, args) => { };
-            watcher.OnRenderFormatRequested += (sender, args) => { };
+        public void WaitWatcher(ClipbordWatcher watcher,Action Action, int milliseconds)
+        {
+            ManualResetEvent waiter= new ManualResetEvent(false);
+            var tr = new Thread(() =>
+            {
+                if (!watcher.IsListenerStarted)
+                    watcher.StartListen();
+                
+                Action();
+                waiter.Set();
+            });
+            tr.SetApartmentState(ApartmentState.STA);
+            tr.Start();
 
-            Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
+            WaitHandle.WaitAny(new WaitHandle[] {waiter}, milliseconds);
+            tr.Abort();
+            watcher.Stop();
+        }
 
-            WinformWrapper wrapper = new WinformWrapper();
-            wrapper.CloseWindow();
-            wrapper.CreateWindow();
-            Thread.Sleep(100);
 
-            using (var clipboard = Clipboard.CreateReadWrite(wrapper.Handle))
+        [TestMethod]
+        public void ShouldReceiveClipbordChageEvent()
+        {
+            var watcher = StartWatcher();
+
+            bool received = false;
+
+            uint curr = ClipbordWatcher.SequenceNumber;
+
+            WaitWatcher(watcher, () =>
+            {
+                watcher.OnClipboardContentChanged += (sender, args) => received = args.Value > curr;
+                Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
+            }, 1000);
+
+            Assert.IsTrue(received);
+        }
+
+
+        [TestMethod]
+        public void ShouldReceiveDestroyMessage()
+        {
+            var watcher = StartWatcher();
+
+            using (var clipboard = Clipboard.CreateReadWrite(watcher))
             {
                 var provider = new UnicodeTextProvider();
                 clipboard.Open();
                 clipboard.Clear();
                 clipboard.SetData(testString, provider);
-                clipboard.Close();
             }
-            Thread tr = new Thread(() =>
-            {
-                Thread.Sleep(100);
+
+            bool destroyMsgReceived = false;
+
+            WaitWatcher(watcher, () =>{
+                watcher.OnClipboardContentDestroy += (sender, args) =>
+                {
+                    destroyMsgReceived = true;
+                };
                 Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
-            });
-            tr.SetApartmentState(ApartmentState.STA);
-            tr.Start();
+            },1000);
 
+            Assert.IsTrue(destroyMsgReceived);
+        }
 
-            foreach (var a in watcher.WaitClipboardData())
+        [TestMethod]
+        public void ShouldReceiveFormatRequestedMessage()
+        {
+            var watcher = new ClipbordWatcher();
+
+            watcher.StartListen();
+            string text=null;
+            using (var clipboard = Clipboard.CreateReadWrite(watcher))
             {
-
+                var provider = new UnicodeTextProvider();
+                clipboard.Open();
+                clipboard.Clear();
+                clipboard.EnrolDataFormat(provider);
             }
 
+            bool renderFormatRequested = false;
 
-            watcher.Dispose();
+
+            WaitWatcher(watcher, () =>
+            {
+                watcher.OnRenderFormatRequested += (sender, args) =>
+                {
+                    renderFormatRequested = true;
+                };
+                text = Clpbrd.GetText();
+            }, 1000);
+
+            Assert.IsTrue(string.IsNullOrWhiteSpace(text));
         }
+        
+        
+        [TestMethod]
+        public void ShouldRequestRenderFormat()
+        {
+            var watcher = new ClipbordWatcher();
+
+            watcher.StartListen();
+            string text=null;
+            var provider = new UnicodeTextProvider();
+
+            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            {
+                
+                clipboard.Open();
+                clipboard.Clear();
+                clipboard.EnrolDataFormat(provider);
+            }
+
+            bool renderFormatRequested = false;
+
+           WaitWatcher(watcher, () =>
+            {
+                                      
+                watcher.OnRenderFormatRequested += (sender, args) =>
+                {
+                    renderFormatRequested = true;
+                    var clipboard = Clipboard.CreateReadWrite(watcher);
+                    clipboard.SetRequestedData(testString, provider);
+                };
+                Thread.Sleep(100);
+                text = Clpbrd.GetText(TextDataFormat.UnicodeText);
+                Thread.Sleep(100);
+   
+            },1000);
+
+            Assert.IsTrue(text == testString);
+        }
+
+        [TestMethod]
+        public void ShouldReceiveDestroyMessageOnTimeout()
+        {
+            var watcher = StartWatcher();
+
+            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            {
+                var provider = new UnicodeTextProvider();
+                clipboard.Open();
+                clipboard.Clear();
+                clipboard.SetData(testString, provider);
+            }
+
+            bool destroyMsgReceived = false;
+
+            WaitWatcher(watcher, () =>
+            {
+                watcher.OnClipboardContentDestroy += (sender, args) =>
+                {
+                    destroyMsgReceived = true;
+                };
+                Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
+            }, 1000);
+
+            Assert.IsTrue(destroyMsgReceived);
+        }
+
     }
 }
