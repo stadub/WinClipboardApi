@@ -87,6 +87,7 @@
     <Compile Include="Helpers\Enumerable.cs" />
     <Compile Include="Helpers\GenericEventArgs.cs" />
     <Compile Include="Helpers\Strings.cs" />
+    <Compile Include="Helpers\TypeHelpers.cs" />
     <Compile Include="Watcher\ClipbordWatcherException.cs" />
     <Compile Include="Watcher\ClipbordWatcher.cs" />
     <Compile Include="Watcher\WatcherEnums.cs" />
