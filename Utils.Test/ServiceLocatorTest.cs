@@ -30,12 +30,12 @@ namespace Utils.Test
     class TestClassWSimpleInjectionCtor : ITestClass
     {
         public object b;
-        public TestClassWCtor([Inject("2")]int a){ b = a; }
+        public TestClassWSimpleInjectionCtor([Inject("2")]int a){ b = a; }
     }
 
     class TestClassWInjectionCtor : ITestClass
     {
-        public TestClassWCtor([Inject()]IList<int> a) { }
+        public TestClassWInjectionCtor([Inject()]IList<int> a) { }
     }
 
 
@@ -45,6 +45,15 @@ namespace Utils.Test
         public IList<int> Prop{get;set;}
     }
 
+    class TestClassWDispose : ITestClass,IDisposable
+    {
+        public bool Disposed{get;set;}
+        
+        public void Dispose()
+        {
+ 	        Disposed=true;
+        }
+    }
 
     [TestClass]
     public class ServiceLocatorTest
@@ -54,9 +63,9 @@ namespace Utils.Test
         {
             var locator = new ServiceLocator();
             var list = new List<int>();
-            locator.Register(list);
+            locator.RegisterInstance<IList<int>,List<int>>(list);
 
-            var reslut = locator.Resolve<List<int>>();
+            var reslut = locator.Resolve<IList<int>>();
 
             Assert.ReferenceEquals(reslut, list);
         }
@@ -65,7 +74,7 @@ namespace Utils.Test
         public void ShouldResolveGenericClass()
         {
             var locator = new ServiceLocator();
-            locator.Register<IList<int>, List<int>>();
+            locator.RegisterType<IList<int>, List<int>>();
 
             var reslut = locator.Resolve<IList<int>>();
 
@@ -77,7 +86,7 @@ namespace Utils.Test
         public void ShouldThrowNotresolvedException_WhenClassNotRegistered()
         {
             var locator = new ServiceLocator();
-            locator.Register<IList<int>, List<int>>();
+            locator.RegisterType<IList<int>, List<int>>();
 
             var reslut = locator.ResolveInstance<IList<int>>();
 
@@ -89,15 +98,15 @@ namespace Utils.Test
         public void ShouldThrowTypeAllreadyRegisteredException_WhenInterfaceInstanceAllreadyRegistered()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClass>();
-            locator.Register<ITestClass, TestClassWDefaultCtor>();
+            locator.RegisterType<ITestClass, TestClass>();
+            locator.RegisterType<ITestClass, TestClassWDefaultCtor>();
         }
 
         [TestMethod]
         public void ShouldResolveClass()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClass>();
+            locator.RegisterType<ITestClass, TestClass>();
 
             var reslut = locator.Resolve<ITestClass>();
 
@@ -108,60 +117,50 @@ namespace Utils.Test
         public void ShouldResolveTestClassWDefaultCtor()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWDefaultCtor>();
+            locator.RegisterType<ITestClass, TestClassWDefaultCtor>();
 
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);
         }
 
-        [TestMethod]
-        public void ShouldResolveTestClassWDefaultCtor()
-        {
-            var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWDefaultCtor>();
-            locator.Register<ITestClass, TestClassWDefaultCtor>();
 
-            var reslut = locator.Resolve<ITestClass>();
-
-            Assert.IsNotNull(reslut);
-        }
 
 
         [TestMethod]
         public void ShouldResolveTestClassWUseCtorAttribute()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWUseCtorAttribute>();
+            locator.RegisterType<ITestClass, TestClassWUseCtorAttribute>();
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);
             var instance=reslut as TestClassWUseCtorAttribute;
             Assert.IsNotNull(instance);
-            Assert.IsTrue(instance.b==2);
+            Assert.IsTrue(instance.b==(object)2);
         }
 
         [TestMethod]
         public void ShouldResolveTestClassWCtor()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWCtor>();
+            locator.RegisterType<ITestClass, TestClassWCtor>();
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);
         }
 
         [TestMethod]
-        public void ShouldResolveTestClassWUseCtorAttribute()
+        public void ShouldResolveTestClassWSimpleInjectionCtor()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWSimpleInjectionCtor>();
+            locator.RegisterType<ITestClass, TestClassWSimpleInjectionCtor>();
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);
             var instance=reslut as TestClassWSimpleInjectionCtor;
             Assert.IsNotNull(instance);
-            Assert.IsTrue(instance.b==2);
+            Assert.IsTrue(instance.b == (object)2);
         }
 
 
@@ -169,9 +168,9 @@ namespace Utils.Test
         public void ShouldResolveTestClassWInjectionCtor()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWUseCtorAttribute>();
+            locator.RegisterType<ITestClass, TestClassWUseCtorAttribute>();
             var list = new List<int>();
-            locator.Register(list);
+            locator.RegisterInstance<IList<int>, List<int>>(list);
 
             var reslut = locator.Resolve<ITestClass>();
 
@@ -180,12 +179,12 @@ namespace Utils.Test
 
 
         [TestMethod]
-        public void ShouldResolveTestClassWInjectionCtor()
+        public void ShouldResolveTestClassWPropertyInjection()
         {
             var locator = new ServiceLocator();
-            locator.Register<ITestClass, TestClassWPropertyInjection>();
+            locator.RegisterType<ITestClass, TestClassWPropertyInjection>();
             var list = new List<int>();
-            locator.Register(list);
+            locator.RegisterInstance<IList<int>, List<int>>(list);
 
             var reslut = locator.Resolve<ITestClass>();
 
@@ -193,6 +192,20 @@ namespace Utils.Test
             var instance=reslut as TestClassWPropertyInjection;
 
             Assert.ReferenceEquals(instance.Prop, list);
+        }
+
+        [TestMethod]
+        public void ShouldDistroyDisposableTypes()
+        {
+            var locator = new ServiceLocator();
+            var disbposble=new TestClassWDispose();
+            locator.RegisterInstance<ITestClass,TestClassWDispose>(disbposble);
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            locator.Dispose();
+
+            Assert.IsTrue(disbposble.Disposed);
         }
     }
 }

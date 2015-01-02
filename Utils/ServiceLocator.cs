@@ -7,19 +7,19 @@ using System.Reflection;
 
 namespace Utils
 {
-    public class ServiceLocator
+    public class ServiceLocator:IDisposable
     {
         Dictionary<Type, Type> registeredTypes = new Dictionary<Type, Type>();
         Dictionary<Type, object> registeredInstances = new Dictionary<Type, object>();
 
-        public void Register<TInterface, TClass>()
+        public void RegisterType<TInterface, TClass>()
         {
             var interfaceType = typeof(TInterface);
             if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
             registeredTypes.Add(interfaceType, typeof(TClass));
         }
 
-        public void Register<TInterface, TValue>(TValue value) where TValue : class
+        public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class
         {
             var interfaceType = typeof(TInterface);
             if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
@@ -143,6 +143,34 @@ namespace Utils
             //declare property/ctor parametr filter signature
             return injectField(field);
         }
+#region Dispose
+        bool disposed=false;
+        public void Dispose()
+        { 
+            Dispose(true);
+            GC.SuppressFinalize(this);           
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return; 
+
+            if (disposing) {
+                foreach (var instance in registeredInstances){
+                    var disposable =instance.Value as IDisposable;
+                    if(disposable!=null)
+                        disposable.Dispose();
+                }
+            }
+
+            disposed = true;
+        }
+
+        ~ServiceLocator()
+        {
+            Dispose(false);
+        }
+#endregion
     }
 
     [AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
@@ -151,7 +179,7 @@ namespace Utils
 
     [AttributeUsage(AttributeTargets.Property|AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
     public sealed class InjectAttribute : Attribute {
-        public Value{get;set;}
+        public object Value{get;set;}
         public InjectAttribute()
         {
         }
@@ -162,7 +190,7 @@ namespace Utils
     }
 
 
-
+#region ServiceLocatorExceptions
     [Serializable]
     public class ServiceLocatorException : Exception
     {
@@ -211,4 +239,5 @@ namespace Utils
           System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
     }
+#endregion
 }

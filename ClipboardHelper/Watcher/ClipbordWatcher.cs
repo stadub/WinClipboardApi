@@ -25,15 +25,32 @@ namespace ClipboardHelper.Watcher
         IntPtr WindowHandle{get;}
     }
 
-    public class ClipbordWatcher : IDisposable, IClipbordMessageProvider
+    public interface IClipbordWatcher
+    {
+        event EventHandler<EventArgs<uint>> OnClipboardContentChanged;
+        event EventHandler<EventArgs> OnClipboardContentDestroy;
+        event EventHandler<EventArgs> OnRenderAllFormatsRequested;
+        event EventHandler<EventArgs<int>> OnRenderFormatRequested;
+        event EventHandler<EventArgs<CopyData>> OnClipboarCopyDataSent;
+        event EventHandler<EventArgs<IntPtr>> OnMessageWindowHwndReceived;
+
+        void StartListen(bool throwIfAnotherListenerStarted = false);
+        void Stop();
+
+        IEnumerable<uint> WaitClipboardData();
+
+        bool IsListenerStarted { get;}
+    }
+
+    public class ClipbordWatcher : IDisposable, IClipbordMessageProvider, IClipbordWatcher
     {
         private const string WatcherProcessName = "ClipboardWatcher.exe";
-        public EventHandler<EventArgs<uint>> OnClipboardContentChanged;
-        public EventHandler<EventArgs> OnClipboardContentDestroy;
-        public EventHandler<EventArgs> OnRenderAllFormatsRequested;
-        public EventHandler<EventArgs<int>> OnRenderFormatRequested;
-        public EventHandler<EventArgs<CopyData>> OnClipboarCopyDataSent;
-        public EventHandler<EventArgs<IntPtr>> OnMessageWindowHwndReceived;
+        public event EventHandler<EventArgs<uint>> OnClipboardContentChanged;
+        public event EventHandler<EventArgs> OnClipboardContentDestroy;
+        public event EventHandler<EventArgs> OnRenderAllFormatsRequested;
+        public event EventHandler<EventArgs<int>> OnRenderFormatRequested;
+        public event EventHandler<EventArgs<CopyData>> OnClipboarCopyDataSent;
+        public event EventHandler<EventArgs<IntPtr>> OnMessageWindowHwndReceived;
 
         private bool startEventSignaled = false;
         private IntPtr windowHandle;
