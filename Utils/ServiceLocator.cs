@@ -14,12 +14,16 @@ namespace Utils
 
         public void Register<TInterface, TClass>()
         {
-            registeredTypes.Add(typeof(TInterface), typeof(TClass));
+            var interfaceType = typeof(TInterface);
+            if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
+            registeredTypes.Add(interfaceType, typeof(TClass));
         }
 
-        public void Register<TInterface, TValue>(TValue value)
+        public void Register<TInterface, TValue>(TValue value) where TValue : class
         {
-            registeredInstances.Add(typeof(TInterface), value);
+            var interfaceType = typeof(TInterface);
+            if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
+            registeredInstances.Add(interfaceType, value);
         }
 
         public T Resolve<T>()
@@ -80,8 +84,17 @@ namespace Utils
             {
                 var paramValues= new List<object>();
                 foreach(var paramDef in paramsDef){
-                    if (paramDef.IsOptional && !paramDef.CustomAttributes.Any(FilterInjectProperties))
+                    if (paramDef.IsOptional)
                         continue;
+                    if (paramDef.CustomAttributes.Any(FilterInjectProperties))
+                    {
+                        var attribute = paramDef.GetCustomAttribute<InjectAttribute>();
+                        if(attribute.Value!=null){
+                            var convertedType=Convert.ChangeType(attribute.Value,paramDef.ParameterType);
+                            paramValues.Add(convertedType);
+                            continue;
+                        }
+                    }
                     paramValues.Add(Resolve(paramDef.ParameterType));
                 }
                 value = ctor.Invoke(paramValues.ToArray());
@@ -133,11 +146,21 @@ namespace Utils
     }
 
     [AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
-    sealed class UseConstructorAttribute : Attribute  {   }
+    public sealed class UseConstructorAttribute : Attribute  {   }
 
 
     [AttributeUsage(AttributeTargets.Property|AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
-    sealed class InjectAttribute : Attribute { }
+    public sealed class InjectAttribute : Attribute {
+        public Value{get;set;}
+        public InjectAttribute()
+        {
+        }
+        public InjectAttribute(string value)
+        {
+            Value=value;
+        }
+    }
+
 
 
     [Serializable]
@@ -172,6 +195,18 @@ namespace Utils
         public ConstructorNotResolvedException(Type type, string message) : base(type,message) {}
         public ConstructorNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
         protected ConstructorNotResolvedException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+    }
+
+    [Serializable]
+    public class TypeAllreadyRegisteredException : ServiceLocatorException
+    {
+        public TypeAllreadyRegisteredException(Type type) : base(type) { }
+        public TypeAllreadyRegisteredException(Type type, string message) : base(type, message) { }
+        public TypeAllreadyRegisteredException(Type type, string message, Exception inner) : base(type, message, inner) { }
+        protected TypeAllreadyRegisteredException(
           System.Runtime.Serialization.SerializationInfo info,
           System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
