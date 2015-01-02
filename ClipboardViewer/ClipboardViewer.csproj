@@ -53,11 +53,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="..\ClipboardHelper\Helpers\TypeHelpers.cs">
-      <Link>Utils\TypeHelpers.cs</Link>
-    </Compile>
     <Compile Include="MvvmBase\RelayCommand.cs" />
-    <Compile Include="MvvmBase\ServiceLocator.cs" />
     <Compile Include="MvvmBase\ViewModelBase.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -101,6 +97,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ViewModel\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Utils\Utils.csproj">
+      <Project>{9e8bc6a9-f053-4702-b7d9-07202907f2dc}</Project>
+      <Name>Utils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

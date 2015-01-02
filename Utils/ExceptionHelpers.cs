@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace ClipboardHelper.Helpers
+namespace Utils
 {
     public sealed class ExceptionHelpers
     {

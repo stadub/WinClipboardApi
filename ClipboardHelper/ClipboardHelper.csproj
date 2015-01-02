@@ -83,16 +83,10 @@
     <Compile Include="FormatProviders\ClipboardFormatProviders.cs" />
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="FormatProviders\SkypeFormatProvider.cs" />
-    <Compile Include="Helpers\AsyncResultBase.cs" />
-    <Compile Include="Helpers\Enumerable.cs" />
-    <Compile Include="Helpers\GenericEventArgs.cs" />
-    <Compile Include="Helpers\Strings.cs" />
-    <Compile Include="Helpers\TypeHelpers.cs" />
     <Compile Include="Watcher\ClipbordWatcherException.cs" />
     <Compile Include="Watcher\ClipbordWatcher.cs" />
     <Compile Include="Watcher\WatcherEnums.cs" />
     <Compile Include="WinApi\GlobalMemoryException.cs" />
-    <Compile Include="Helpers\ExceptionHelpers.cs" />
     <Compile Include="WinApi\GlobalMemory.cs" />
     <Compile Include="FormatProviders\StandartClipbordFormats.cs" />
     <Compile Include="ClipboardException.cs" />
@@ -102,6 +96,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Utils\Utils.csproj">
+      <Project>{9e8bc6a9-f053-4702-b7d9-07202907f2dc}</Project>
+      <Name>Utils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

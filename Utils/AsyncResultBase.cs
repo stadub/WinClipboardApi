@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace ClipboardHelper.Helpers
+namespace Utils
 {
 
     public class AsyncResult : IAsyncResult

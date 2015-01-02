@@ -10,6 +10,7 @@ using ClipboardHelperTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;
 using Clpbrd = System.Windows.Forms.Clipboard;
+using Utils;
 
 namespace ClipbordHelperTest
 {

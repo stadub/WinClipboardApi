@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ClipboardHelper.Helpers
+namespace Utils
 {
-    public static class Enumerable
+    public static class EnumerableHelpers
     {
         public static void ForEach<T>(this IEnumerable<T> enumerable,Action<T> action)
         {

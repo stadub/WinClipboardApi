@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClipboardHelper.Helpers;
 using System.Reflection;
 
-namespace ClipboardViewer.MvvmBase
+namespace Utils
 {
     public class ServiceLocator
     {
@@ -72,10 +71,6 @@ namespace ClipboardViewer.MvvmBase
 
             var ctor = GetConstructor(destType);
 
-            //declare property/ctor parametr filter signature
-            var injectionFlagType=typeof(InjectPropertyAttribute);
-            Func<CustomAttributeData,bool> injectField = (x)=> x.AttributeType.IsAssignableFrom(injectionFlagType);
-
             //resolving constructor parametrs
             var paramsDef=ctor.GetParameters();
 
@@ -85,16 +80,16 @@ namespace ClipboardViewer.MvvmBase
             {
                 var paramValues= new List<object>();
                 foreach(var paramDef in paramsDef){
-                    if (paramDef.IsOptional && !paramDef.CustomAttributes.Any(injectField))
+                    if (paramDef.IsOptional && !paramDef.CustomAttributes.Any(FilterInjectProperties))
                         continue;
                     paramValues.Add(Resolve(paramDef.ParameterType));
                 }
-                value=Activator.CreateInstance(@type);
+                value = ctor.Invoke(paramValues.ToArray());
             }
 
             //resolving injection properties
             var propsToInject= @type.GetProperties()
-                .Where(x => x.CustomAttributes.Any(injectField));
+                .Where(x => x.CustomAttributes.Any(FilterInjectProperties));
 
             foreach(var prop in propsToInject){
                 var propValue=Resolve(prop.PropertyType);
@@ -128,6 +123,13 @@ namespace ClipboardViewer.MvvmBase
             throw new ConstructorNotResolvedException(type);
         }
 
+        static Type injectionFlagType = typeof(InjectAttribute);
+        static Func<CustomAttributeData, bool> injectField = (x) => x.AttributeType.IsAssignableFrom(injectionFlagType);
+        protected static bool FilterInjectProperties(CustomAttributeData field)
+        {
+            //declare property/ctor parametr filter signature
+            return injectField(field);
+        }
     }
 
     [AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
@@ -135,7 +137,7 @@ namespace ClipboardViewer.MvvmBase
 
 
     [AttributeUsage(AttributeTargets.Property|AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
-    sealed class InjectPropertyAttribute : Attribute { }
+    sealed class InjectAttribute : Attribute { }
 
 
     [Serializable]
