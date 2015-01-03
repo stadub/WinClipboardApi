@@ -207,5 +207,15 @@ namespace Utils.Test
 
             Assert.IsTrue(disbposble.Disposed);
         }
+
+        [TestMethod]
+        public void ShouldResolveInitalizer()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterInitalizer<ITestClass>(() => new TestClassWDispose());
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+        }
     }
 }

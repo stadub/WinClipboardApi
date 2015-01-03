@@ -11,20 +11,42 @@ namespace Utils
     {
         Dictionary<Type, Type> registeredTypes = new Dictionary<Type, Type>();
         Dictionary<Type, object> registeredInstances = new Dictionary<Type, object>();
+        Dictionary<Type, object> registeredInitalizers = new Dictionary<Type, object>();
 
+        #region Register methods
         public void RegisterType<TInterface, TClass>()
         {
             var interfaceType = typeof(TInterface);
-            if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
+            CheckDuplicated(interfaceType);
             registeredTypes.Add(interfaceType, typeof(TClass));
+        }
+
+        public void RegisterInitalizer<TInterface>(Func<TInterface> typeResolver)
+        {
+            var interfaceType = typeof(TInterface);
+            CheckDuplicated(interfaceType);
+            registeredInstances.Add(interfaceType, typeResolver);
         }
 
         public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class
         {
             var interfaceType = typeof(TInterface);
-            if (registeredTypes.ContainsKey(interfaceType)) throw new TypeAllreadyRegisteredException(interfaceType);
+            CheckDuplicated(interfaceType);
             registeredInstances.Add(interfaceType, value);
         }
+
+        protected virtual void CheckDuplicated(Type interfaceType)
+        {
+            if (registeredTypes.ContainsKey(interfaceType))
+                throw new TypeAllreadyRegisteredException(interfaceType, "Type-Type pair allready registered (via RegisterType)");
+            if (registeredInstances.ContainsKey(interfaceType))
+                throw new TypeAllreadyRegisteredException(interfaceType, "Type instance allready registered (via RegisterInstance)");
+
+            if (registeredInitalizers.ContainsKey(interfaceType))
+                throw new TypeAllreadyRegisteredException(interfaceType, "Type allready registered (via RegisterInitalizer)");
+        }
+        #endregion
+        #region Resolvers
 
         public T Resolve<T>()
         {
@@ -32,14 +54,25 @@ namespace Utils
             return (T)Resolve(@type);
         }
 
-        protected object Resolve(Type @type)
+        public object Resolve(Type @type)
         {
             object result;
             if (TryResolveInstance(@type,out result))
                 return result;
+            if (TryResolveInitalizer(@type, out result))
+                return result;
             if (TryConstructType(@type,out result))
                 return result;
             throw new TypeNotResolvedException(@type);
+        }
+
+        public T ResolveType<T>()
+        {
+            object result;
+            var @type = typeof(T);
+            if (!TryConstructType(@type, out result))
+                throw new TypeNotResolvedException(typeof(T));
+            return (T)result;
         }
 
         public T ResolveInstance<T>()
@@ -47,6 +80,16 @@ namespace Utils
             object result;
             var @type = typeof(T);
             if (!TryResolveInstance(@type,out result))
+                throw new TypeNotResolvedException(typeof(T));
+
+            return (T)result;
+        }
+
+        public T ResolveInitalizer<T>()
+        {
+            object result;
+            var @type = typeof(T);
+            if (!TryResolveInitalizer(@type, out result))
                 throw new TypeNotResolvedException(typeof(T));
 
             return (T)result;
@@ -62,6 +105,19 @@ namespace Utils
             value = TypeHelpers.GetDefault(@type);
             return false;
         }
+
+        protected virtual bool TryResolveInitalizer(Type @type, out object value)
+        {
+            if (registeredInitalizers.ContainsKey(@type))
+            {
+                Delegate initalizer = (Delegate)registeredInitalizers[@type];
+                value=initalizer.DynamicInvoke();
+                return true;
+            }
+            value = null;
+            return false;
+        }
+        #endregion
 
         protected virtual bool TryConstructType(Type @type,out object value)
         {
