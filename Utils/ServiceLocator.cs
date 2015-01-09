@@ -11,21 +11,27 @@ namespace Utils
     {
         Dictionary<Type, Type> registeredTypes = new Dictionary<Type, Type>();
         Dictionary<Type, object> registeredInstances = new Dictionary<Type, object>();
-        Dictionary<Type, object> registeredInitalizers = new Dictionary<Type, object>();
+        Dictionary<Type, object> registeredInitializers = new Dictionary<Type, object>();
 
         #region Register methods
         public void RegisterType<TInterface, TClass>()
         {
             var interfaceType = typeof(TInterface);
+            var classType = typeof(TClass);
+
+            if (interfaceType.IsGenericType || classType.IsGenericType)
+                throw new TypeNotSupportedException(interfaceType,"Generic Types cannot be registered by RegisterType type registration");
+
             CheckDuplicated(interfaceType);
-            registeredTypes.Add(interfaceType, typeof(TClass));
+            registeredTypes.Add(interfaceType, classType);
         }
 
-        public void RegisterInitalizer<TInterface>(Func<TInterface> typeResolver)
+
+        public void RegisterInitializer<TInterface>(Func<TInterface> typeResolver)
         {
             var interfaceType = typeof(TInterface);
             CheckDuplicated(interfaceType);
-            registeredInstances.Add(interfaceType, typeResolver);
+            registeredInitializers.Add(interfaceType, typeResolver);
         }
 
         public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class
@@ -35,6 +41,10 @@ namespace Utils
             registeredInstances.Add(interfaceType, value);
         }
 
+        protected virtual void CheckDuplicatedGeneric(Type genericType,Type type)
+        {
+            
+        }
         protected virtual void CheckDuplicated(Type interfaceType)
         {
             if (registeredTypes.ContainsKey(interfaceType))
@@ -42,8 +52,8 @@ namespace Utils
             if (registeredInstances.ContainsKey(interfaceType))
                 throw new TypeAllreadyRegisteredException(interfaceType, "Type instance allready registered (via RegisterInstance)");
 
-            if (registeredInitalizers.ContainsKey(interfaceType))
-                throw new TypeAllreadyRegisteredException(interfaceType, "Type allready registered (via RegisterInitalizer)");
+            if (registeredInitializers.ContainsKey(interfaceType))
+                throw new TypeAllreadyRegisteredException(interfaceType, "Type allready registered (via RegisterInitializer)");
         }
         #endregion
         #region Resolvers
@@ -59,12 +69,13 @@ namespace Utils
             object result;
             if (TryResolveInstance(@type,out result))
                 return result;
-            if (TryResolveInitalizer(@type, out result))
+            if (TryResolveInitializer(@type, out result))
                 return result;
             if (TryConstructType(@type,out result))
                 return result;
             throw new TypeNotResolvedException(@type);
         }
+
 
         public T ResolveType<T>()
         {
@@ -85,11 +96,11 @@ namespace Utils
             return (T)result;
         }
 
-        public T ResolveInitalizer<T>()
+        public T ResolveInitializer<T>()
         {
             object result;
             var @type = typeof(T);
-            if (!TryResolveInitalizer(@type, out result))
+            if (!TryResolveInitializer(@type, out result))
                 throw new TypeNotResolvedException(typeof(T));
 
             return (T)result;
@@ -106,12 +117,12 @@ namespace Utils
             return false;
         }
 
-        protected virtual bool TryResolveInitalizer(Type @type, out object value)
+        protected virtual bool TryResolveInitializer(Type @type, out object value)
         {
-            if (registeredInitalizers.ContainsKey(@type))
+            if (registeredInitializers.ContainsKey(@type))
             {
-                Delegate initalizer = (Delegate)registeredInitalizers[@type];
-                value=initalizer.DynamicInvoke();
+                Delegate Initializer = (Delegate)registeredInitializers[@type];
+                value=Initializer.DynamicInvoke();
                 return true;
             }
             value = null;
@@ -135,29 +146,43 @@ namespace Utils
             var paramsDef=ctor.GetParameters();
 
             if(paramsDef.Length==0)
-                value=Activator.CreateInstance(@type);
+                value = Activator.CreateInstance(destType);
             else
             {
                 var paramValues= new List<object>();
-                foreach(var paramDef in paramsDef){
+                foreach(var paramDef in paramsDef)
+                {
+                    var parametrType = paramDef.ParameterType;
+                    if (paramDef.IsOut || parametrType.IsByRef)
+                        throw new TypeNotSupportedException(@type,"Constructors with Out and Ref Attributes are not supported");
+                    
+                    object paramValue = null;
+                    //optional parametr - defaut value or default(T)
                     if (paramDef.IsOptional)
-                        continue;
-                    if (paramDef.CustomAttributes.Any(FilterInjectProperties))
+                    {
+                        paramValue = paramDef.HasDefaultValue ? paramDef.DefaultValue : TypeHelpers.GetDefault(parametrType);
+                    }
+                    //Inject parametr value from Inject Attribute
+                    else if (paramDef.CustomAttributes.Any(FilterInjectProperties))
                     {
                         var attribute = paramDef.GetCustomAttribute<InjectAttribute>();
                         if(attribute.Value!=null){
-                            var convertedType=Convert.ChangeType(attribute.Value,paramDef.ParameterType);
-                            paramValues.Add(convertedType);
-                            continue;
+                            var convertedType = Convert.ChangeType(attribute.Value, parametrType);
+                            paramValue=convertedType;
                         }
                     }
-                    paramValues.Add(Resolve(paramDef.ParameterType));
+                    //Typing to resolve type from registered in the Locator
+                    else
+                    {
+                        paramValue = Resolve(parametrType);
+                    }
+                    paramValues.Add(paramValue);
                 }
                 value = ctor.Invoke(paramValues.ToArray());
             }
 
             //resolving injection properties
-            var propsToInject= @type.GetProperties()
+            var propsToInject = destType.GetProperties()
                 .Where(x => x.CustomAttributes.Any(FilterInjectProperties));
 
             foreach(var prop in propsToInject){
@@ -167,6 +192,7 @@ namespace Utils
             return true;
         }
 
+        
         private ConstructorInfo GetConstructor(Type type)
         {
             //enumerating only public ctors
@@ -267,6 +293,18 @@ namespace Utils
         public TypeNotResolvedException(Type type, string message) : base(type,message) {}
         public TypeNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
         protected TypeNotResolvedException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+    }
+    
+    [Serializable]
+    public class TypeNotSupportedException : ServiceLocatorException
+    {
+        public TypeNotSupportedException(Type type):base(type) {}
+        public TypeNotSupportedException(Type type, string message) : base(type,message) {}
+        public TypeNotSupportedException(Type type, string message, Exception inner) : base(type,message, inner) {}
+        protected TypeNotSupportedException(
           System.Runtime.Serialization.SerializationInfo info,
           System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
