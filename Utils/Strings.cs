@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ClipboardHelper.Helpers
+namespace Utils
 {
     public static class Strings
     {

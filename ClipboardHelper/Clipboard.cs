@@ -5,9 +5,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using ClipboardHelper.FormatProviders;
-using ClipboardHelper.Helpers;
 using ClipboardHelper.Watcher;
 using ClipboardHelper.Win32;
+using Utils;
 
 namespace ClipboardHelper
 {
