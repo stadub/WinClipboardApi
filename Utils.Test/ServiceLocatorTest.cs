@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace Utils.Test
 {
+    #region TestClasses
     interface ITestClass { }
 
     class TestClass : ITestClass { }
@@ -51,6 +52,11 @@ namespace Utils.Test
         public TestClassWRetvalCtor([Inject("2")]ref int a) { }
     }
 
+
+    class TestClassWProperty : ITestClass
+    {
+        public IList<int> Prop { get; set; }
+    }
     
     class TestClassWPropertyInjection : ITestClass
     {
@@ -67,6 +73,7 @@ namespace Utils.Test
  	        Disposed=true;
         }
     }
+    #endregion TestClasses
 
     [TestClass]
     public class ServiceLocatorTest
@@ -137,9 +144,6 @@ namespace Utils.Test
 
             Assert.IsNotNull(reslut);
         }
-
-
-
 
         [TestMethod]
         public void ShouldResolveTestClassWUseCtorAttribute()
@@ -243,6 +247,82 @@ namespace Utils.Test
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);
+        }
+
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ShouldThrowExceptionOnTryToInjectMethodInsteadProperty()
+        {
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWProperty>()
+                .InjectProperty(classWProp => classWProp.GetType());
+        }
+
+        [TestMethod]
+        public void ShouldResolveTestClassWPropertyInjectionByExtension()
+        {
+
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWProperty>()
+                .InjectProperty(classWProp => classWProp.Prop);
+            var list = new List<int>();
+            locator.RegisterInstance<IList<int>, List<int>>(list);
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWProperty;
+
+            Assert.ReferenceEquals(instance.Prop, list);
+        }
+
+        [TestMethod]
+        public void ShouldResolveTestClassByNamedResolver()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWProperty>("class1");
+            var reslut = locator.ResolveType<ITestClass>("class1");
+            Assert.IsNotNull(reslut);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(TypeNotResolvedException))]
+        public void ShouldThrowExceptionOnTryResolveDefaultTypeWhenRegisteredNamed()
+        {
+
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWProperty>("class1");
+
+            locator.ResolveType<ITestClass>();
+        }
+
+
+        [TestMethod]
+        public void ShouldResolveCorrectTestClassWhenNamedAndDefaultRegistered()
+        {
+
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWProperty>()
+                .InjectProperty(classWProp => classWProp.Prop);
+            var list = new List<int>();
+            locator.RegisterInstance<IList<int>, List<int>>(list);
+            locator.RegisterType<ITestClass, TestClassWProperty>("class1");
+
+            var reslut = locator.ResolveType<ITestClass>();
+            var reslut2 = locator.ResolveType<ITestClass>("class1");
+
+            Assert.IsNotNull(reslut);
+            Assert.IsNotNull(reslut2);
+            var instance = reslut as TestClassWProperty;
+            var instance2 = reslut2 as TestClassWProperty;
+
+            Assert.ReferenceEquals(instance.Prop, list);
+
+            Assert.IsNull(instance2.Prop);
         }
     }
 }

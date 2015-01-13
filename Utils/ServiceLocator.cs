@@ -1,54 +1,71 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 
 namespace Utils
 {
-    public class ServiceLocator:IDisposable
+    public partial class ServiceLocator:IDisposable
     {
-        Dictionary<Type, Type> registeredTypes = new Dictionary<Type, Type>();
         Dictionary<Type, object> registeredInstances = new Dictionary<Type, object>();
         Dictionary<Type, object> registeredInitializers = new Dictionary<Type, object>();
 
+        Dictionary<Type, List<TypeRegistrationInfo>> registeredTypes = new Dictionary<Type, List<TypeRegistrationInfo>>();
+
         #region Register methods
-        public void RegisterType<TInterface, TClass>()
+        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>()
+        {
+            return RegisterType<TInterface, TClass>(string.Empty);
+        }
+
+        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>(string name)
         {
             var interfaceType = typeof(TInterface);
             var classType = typeof(TClass);
 
             if (interfaceType.IsGenericType || classType.IsGenericType)
-                throw new TypeNotSupportedException(interfaceType,"Generic Types cannot be registered by RegisterType type registration");
+                throw new TypeNotSupportedException(interfaceType,"Generic Types cannot be registered by RegisterType registrationInfo registration");
 
-            CheckDuplicated(interfaceType);
-            registeredTypes.Add(interfaceType, classType);
+            CheckDuplicated(interfaceType, name);
+
+            if (!registeredTypes.ContainsKey(interfaceType))
+                registeredTypes[interfaceType]=new List<TypeRegistrationInfo>();
+
+            var registrationInfos = registeredTypes[interfaceType];
+            var registrationInfo = new TypeRegistrationInfo(classType, name);
+            registrationInfos.Add(registrationInfo);
+            return new LocatorRegistrationInfo<TClass>(registrationInfo);
         }
-
 
         public void RegisterInitializer<TInterface>(Func<TInterface> typeResolver)
         {
             var interfaceType = typeof(TInterface);
-            CheckDuplicated(interfaceType);
+            CheckDuplicated(interfaceType,string.Empty);
             registeredInitializers.Add(interfaceType, typeResolver);
         }
 
         public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class
         {
             var interfaceType = typeof(TInterface);
-            CheckDuplicated(interfaceType);
+            CheckDuplicated(interfaceType,string.Empty);
             registeredInstances.Add(interfaceType, value);
         }
 
-        protected virtual void CheckDuplicatedGeneric(Type genericType,Type type)
-        {
-            
-        }
-        protected virtual void CheckDuplicated(Type interfaceType)
+
+        protected virtual void CheckDuplicated(Type interfaceType,string name)
         {
             if (registeredTypes.ContainsKey(interfaceType))
-                throw new TypeAllreadyRegisteredException(interfaceType, "Type-Type pair allready registered (via RegisterType)");
+            {
+                var allInstances=registeredTypes[interfaceType];
+                var index = allInstances.FindIndex(info => info.RegistrationName == name);
+                if (index!=-1)
+                    throw new TypeAllreadyRegisteredException(interfaceType, "Type-Type pair allready registered (via RegisterType)");
+
+            }
+                
             if (registeredInstances.ContainsKey(interfaceType))
                 throw new TypeAllreadyRegisteredException(interfaceType, "Type instance allready registered (via RegisterInstance)");
 
@@ -57,6 +74,8 @@ namespace Utils
         }
         #endregion
         #region Resolvers
+
+
 
         public T Resolve<T>()
         {
@@ -71,19 +90,23 @@ namespace Utils
                 return result;
             if (TryResolveInitializer(@type, out result))
                 return result;
-            if (TryConstructType(@type,out result))
+            if (TryConstructType(@type,string.Empty,out result))
                 return result;
             throw new TypeNotResolvedException(@type);
         }
 
-
-        public T ResolveType<T>()
+        public T ResolveType<T>(string name)
         {
             object result;
             var @type = typeof(T);
-            if (!TryConstructType(@type, out result))
+            if (!TryConstructType(@type, name, out result))
                 throw new TypeNotResolvedException(typeof(T));
             return (T)result;
+        }
+
+        public T ResolveType<T>()
+        {
+            return ResolveType<T>(string.Empty);
         }
 
         public T ResolveInstance<T>()
@@ -130,7 +153,7 @@ namespace Utils
         }
         #endregion
 
-        protected virtual bool TryConstructType(Type @type,out object value)
+        protected virtual bool TryConstructType(Type type, string name, out object value)
         {
             if (!registeredTypes.ContainsKey(@type))
             {
@@ -138,65 +161,65 @@ namespace Utils
                 return false;
             }
 
-            var destType = registeredTypes[@type];
+            var typeRegistrations= registeredTypes[@type];
+            var registration=typeRegistrations.FirstOrDefault(info => info.RegistrationName == name);
+            if (registration == null) throw new TypeNotResolvedException(type,"Cannot find type registration");
+            var ctor = GetConstructor(registration);
 
-            var ctor = GetConstructor(destType);
+            value = CreateInstance(registration.DestType,type, ctor);
 
-            //resolving constructor parametrs
-            var paramsDef=ctor.GetParameters();
-
-            if(paramsDef.Length==0)
-                value = Activator.CreateInstance(destType);
-            else
-            {
-                var paramValues= new List<object>();
-                foreach(var paramDef in paramsDef)
-                {
-                    var parametrType = paramDef.ParameterType;
-                    if (paramDef.IsOut || parametrType.IsByRef)
-                        throw new TypeNotSupportedException(@type,"Constructors with Out and Ref Attributes are not supported");
-                    
-                    object paramValue = null;
-                    //optional parametr - defaut value or default(T)
-                    if (paramDef.IsOptional)
-                    {
-                        paramValue = paramDef.HasDefaultValue ? paramDef.DefaultValue : TypeHelpers.GetDefault(parametrType);
-                    }
-                    //Inject parametr value from Inject Attribute
-                    else if (paramDef.CustomAttributes.Any(FilterInjectProperties))
-                    {
-                        var attribute = paramDef.GetCustomAttribute<InjectAttribute>();
-                        if(attribute.Value!=null){
-                            var convertedType = Convert.ChangeType(attribute.Value, parametrType);
-                            paramValue=convertedType;
-                        }
-                    }
-                    //Typing to resolve type from registered in the Locator
-                    else
-                    {
-                        paramValue = Resolve(parametrType);
-                    }
-                    paramValues.Add(paramValue);
-                }
-                value = ctor.Invoke(paramValues.ToArray());
-            }
-
-            //resolving injection properties
-            var propsToInject = destType.GetProperties()
-                .Where(x => x.CustomAttributes.Any(FilterInjectProperties));
-
-            foreach(var prop in propsToInject){
-                var propValue=Resolve(prop.PropertyType);
-                prop.SetValue(value,propValue);
-            }
+            InjectTypeProperties(value, registration);
             return true;
         }
 
-        
-        private ConstructorInfo GetConstructor(Type type)
+        private object CreateInstance(Type destType, Type sourceType, ConstructorInfo ctor)
+        {
+            //resolving constructor parametrs
+            var paramsDef = ctor.GetParameters();
+
+            if (paramsDef.Length == 0)
+                return Activator.CreateInstance(destType);
+
+            var paramValues = new List<object>();
+            foreach (var paramDef in paramsDef)
+            {
+                var parametrType = paramDef.ParameterType;
+                if (paramDef.IsOut || parametrType.IsByRef)
+                {
+                    throw new TypeNotSupportedException(sourceType, "Constructors with Out and Ref Attributes are not supported");
+                }
+
+                object paramValue = null;
+                //optional parametr - defaut value or default(T)
+                if (paramDef.IsOptional)
+                {
+                    paramValue = paramDef.HasDefaultValue ? paramDef.DefaultValue : TypeHelpers.GetDefault(parametrType);
+                }
+                //Inject parametr value from Inject Attribute
+                else if (paramDef.CustomAttributes.Any(FilterInjectParametrs))
+                {
+                    var attribute = paramDef.GetCustomAttribute<InjectAttribute>();
+                    if (attribute.Value != null)
+                    {
+                        var convertedType = Convert.ChangeType(attribute.Value, parametrType);
+                        paramValue = convertedType;
+                    }
+                }
+                //Typing to resolve registrationInfo from registered in the Locator
+                else
+                {
+                    paramValue = Resolve(parametrType);
+                }
+                paramValues.Add(paramValue);
+            }
+            return ctor.Invoke(paramValues.ToArray());
+        }
+
+
+        private ConstructorInfo GetConstructor(TypeRegistrationInfo type)
         {
             //enumerating only public ctors
-            var ctors = type.GetConstructors();
+            var ctors = type.DestType.GetConstructors();
 
             //search for constructor marked as [UseConstructor]
             foreach (var ctor in ctors)
@@ -215,16 +238,37 @@ namespace Utils
             //try to use first public
             if(ctors.Length>0)
                 return ctors[0];
-            throw new ConstructorNotResolvedException(type);
+            throw new ConstructorNotResolvedException(type.DestType);
         }
 
         static Type injectionFlagType = typeof(InjectAttribute);
         static Func<CustomAttributeData, bool> injectField = (x) => x.AttributeType.IsAssignableFrom(injectionFlagType);
-        protected static bool FilterInjectProperties(CustomAttributeData field)
+        protected static bool FilterInjectParametrs(CustomAttributeData field)
         {
             //declare property/ctor parametr filter signature
             return injectField(field);
         }
+
+        protected void InjectTypeProperties(object instance, TypeRegistrationInfo type)
+        {
+            //Inject registered property injections
+            var injectProperties = type.PropertyInjections;
+            foreach (var prop in injectProperties)
+            {
+                var propValue = Resolve(prop.PropertyType);
+                prop.SetValue(instance, propValue);
+            }
+
+            //resolving injection properties, that doesn't registered in the "PropertyInjections"
+            var propsToInject = type.DestType.GetProperties()
+                .Where(x => x.CustomAttributes.Any(FilterInjectParametrs) && !injectProperties.Contains(x));
+
+            foreach(var prop in propsToInject){
+                var propValue=Resolve(prop.PropertyType);
+                prop.SetValue(instance, propValue);
+            }
+        }
+
 #region Dispose
         bool disposed=false;
         public void Dispose()
@@ -253,6 +297,8 @@ namespace Utils
             Dispose(false);
         }
 #endregion
+
+
     }
 
     [AttributeUsage(AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
@@ -271,6 +317,20 @@ namespace Utils
         }
     }
 
+
+
+    public class TypeRegistrationInfo
+    {
+        public TypeRegistrationInfo(Type destType, string registrationName)
+        {
+            PropertyInjections = new List<PropertyInfo>();
+            DestType = destType;
+            RegistrationName = registrationName;
+        }
+        public List<PropertyInfo> PropertyInjections { get; private set; }
+        public Type DestType { get; private set; }
+        public string RegistrationName { get; private set; }
+    }
 
 #region ServiceLocatorExceptions
     [Serializable]
@@ -334,4 +394,9 @@ namespace Utils
             : base(info, context) { }
     }
 #endregion
+
+
+   
+    
+
 }
