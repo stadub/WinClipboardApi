@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ClipboardViewer.MvvmBase
+namespace Utils.Wpf.MvvmBase
 {
     public abstract class ViewModelBase : INotifyPropertyChanged
     {

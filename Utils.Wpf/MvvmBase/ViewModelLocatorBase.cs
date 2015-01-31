@@ -1,7 +1,6 @@
 using System.Windows;
-using Utils;
 
-namespace ClipboardViewer.MvvmBase
+namespace Utils.Wpf.MvvmBase
 {
     public class ViewModelLocatorBase
     {

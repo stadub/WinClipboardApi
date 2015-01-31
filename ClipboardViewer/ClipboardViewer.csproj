@@ -53,12 +53,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="MvvmBase\RelayCommand.cs" />
-    <Compile Include="MvvmBase\ViewModelBase.cs" />
-    <Compile Include="MvvmBase\ViewModelLocatorBase.cs" />
-    <Compile Include="MvvmBase\VisibilityConverter.cs" />
+    <Compile Include="Bootstraper.cs" />
+    <Compile Include="ViewModelLocator.cs" />
     <Compile Include="ViewModel\ClipboardContent\TextViewModel.cs" />
+    <Compile Include="ViewModel\DesignTime\DBootstraper.cs" />
+    <Compile Include="ViewModel\DesignTime\DMainWindowViewModel.cs" />
+    <Compile Include="ViewModel\DesignTime\DViewModelLocator.cs" />
+    <Compile Include="ViewModel\FormatProviderViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
+    <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="View\ClipboardContent\TextView.xaml.cs">
       <DependentUpon>TextView.xaml</DependentUpon>
     </Compile>
@@ -84,7 +87,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ViewModelLocator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -115,8 +117,12 @@
   <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\ClipboardHelper\ClipboardHelper.csproj">
-      <Project>{70180df9-fb5c-4bd1-af05-827405cd7eb3}</Project>
+      <Project>{70180DF9-FB5C-4BD1-AF05-827405CD7EB3}</Project>
       <Name>ClipboardHelper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Utils.Wpf\Utils.Wpf.csproj">
+      <Project>{E443A1C6-6077-4C03-A2C7-BA93C748011B}</Project>
+      <Name>Utils.Wpf</Name>
     </ProjectReference>
     <ProjectReference Include="..\Utils\Utils.csproj">
       <Project>{9e8bc6a9-f053-4702-b7d9-07202907f2dc}</Project>

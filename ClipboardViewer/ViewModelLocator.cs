@@ -1,6 +1,6 @@
-﻿using ClipboardViewer.MvvmBase;
-using ClipboardViewer.ViewModel;
+﻿using ClipboardViewer.ViewModel;
 using Utils;
+using Utils.Wpf.MvvmBase;
 
 namespace ClipboardViewer
 {
@@ -10,7 +10,6 @@ namespace ClipboardViewer
         {
             Register<MainWindow, MainWindowViewModel>();
         }
-
 
         public MainWindowViewModel MainPage
         {

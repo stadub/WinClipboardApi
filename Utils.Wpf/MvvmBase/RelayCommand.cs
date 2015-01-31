@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace ClipboardViewer.MvvmBase
+namespace Utils.Wpf.MvvmBase
 {
     public class RelayCommand : ICommand
     {

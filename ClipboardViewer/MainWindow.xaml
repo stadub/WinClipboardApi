@@ -1,7 +1,7 @@
 ﻿<Window x:Class="ClipboardViewer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mvvmBase="clr-namespace:ClipboardViewer.MvvmBase"
+        xmlns:mvvmBase="clr-namespace:ClipboardViewer.MvvmBase;assembly=Utils.Wpf"
         Title="MainWindow" Height="350" Width="525"
         DataContext="{Binding MainPage, Source={StaticResource ViewModelLocator}}">
     <Window.Resources>
