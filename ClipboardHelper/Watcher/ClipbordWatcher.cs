@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using ClipboardHelper.Win32;
 using Utils;
 
 namespace ClipboardHelper.Watcher

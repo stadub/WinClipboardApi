@@ -40,6 +40,7 @@ namespace ClipboardHelper.FormatProviders
             LegacyQuote.Add(new SkypeMessageTextLine{Quote = quote,Text = text});
         }
     }
+
     [XmlRoot("quote")]
     public class SkypeQuoteSerializable:IXmlSerializable
     {
@@ -121,16 +122,21 @@ namespace ClipboardHelper.FormatProviders
         }
     }
 
-    public class SkypeFormatProvider : DataFormatProvider<SkypeQuote>
+    public class SkypeFormatProvider : DataFormatProvider
     {
         private static readonly XmlSerializer XmlSerializer = new XmlSerializer(typeof(SkypeQuoteSerializable));
 
         private UnicodeStringSerializer provider;
         private const int XmlHeaderLenght = 39;
-        public SkypeFormatProvider()
+
+        public SkypeFormatProvider(): this(new SkypeQuote()){}
+
+        public SkypeFormatProvider(SkypeQuote quote)
         {
+            Quote = quote;
             provider = new UnicodeStringSerializer();
         }
+
         public override string FormatId
         {
             get { return "SkypeMessageFragment"; }
@@ -154,16 +160,24 @@ namespace ClipboardHelper.FormatProviders
 
             return builder.ToString(XmlHeaderLenght, builder.Length - XmlHeaderLenght);
         }
-        public override byte[] Serialize(SkypeQuote data)
+
+        public SkypeQuote Quote { get;private set;}
+
+        public override object Data
         {
-            var stringData = SerilizeToString(data);
-            return provider.Serialize(stringData);
+            get { return Quote; }
         }
 
-        public override SkypeQuote Deserialize(byte[] data)
+        protected override void DeserializeData(byte[] data)
         {
-            var strData= provider.Deserialize(data);
-            return FromString(strData);
+            var strData = provider.Deserialize(data);
+            Quote= FromString(strData);
+        }
+
+        public override byte[] Serialize()
+        {
+            var stringData = SerilizeToString(Quote);
+            return provider.Serialize(stringData);
         }
     }
 }

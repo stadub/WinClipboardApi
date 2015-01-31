@@ -4,49 +4,39 @@ using System.Text;
 
 namespace ClipboardHelper.FormatProviders
 {
-    public interface IClipbordFormatProvider<T> : IClipbordFormatProvider
-    {
-        string FormatId { get; }
-        byte[] Serialize(T data);
-
-        T Deserialize(byte[] data);
-    }
-    
     public interface IClipbordFormatProvider
     {
         string FormatId { get; }
-        byte[] Serialize(object data);
+        byte[] Serialize();
 
-        object Deserialize(byte[] data);
+        void Deserialize(byte[] data);
+
+        object Data { get; }
     }
-
+    
     //extend provider
 
-    public abstract class DataFormatProvider<T> : IClipbordFormatProvider<T>, IClipbordFormatProvider
+    public abstract class DataFormatProvider : IClipbordFormatProvider
     {
 
         public abstract string FormatId { get; }
 
-        public abstract byte[] Serialize(T data);
+        public abstract byte[] Serialize();
 
-        byte[] IClipbordFormatProvider.Serialize(object data)
+
+        public void Deserialize(byte[] data)
         {
-            if(data==null)
+            if (data == null)
                 throw new ArgumentNullException("data");
-            if ( !(data is T))
-                throw new ArgumentException("data", string.Format("Cannot cast value of {0} to {1} type",data.GetType(),typeof(T)));
-            return Serialize((T) data);
+            DeserializeData(data);
         }
 
-        object IClipbordFormatProvider.Deserialize(byte[] data)
-        {
-            return Deserialize(data);
-        }
+        public abstract object Data { get; }
 
-        public abstract T Deserialize(byte[] data);
+        protected abstract void DeserializeData(byte[] data);
 
 
-        protected bool Equals(DataFormatProvider<T> other)
+        protected bool Equals(DataFormatProvider other)
         {
             if (ReferenceEquals(other, this))
                 return true;
@@ -56,13 +46,8 @@ namespace ClipboardHelper.FormatProviders
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as DataFormatProvider<T>);
+            return Equals(obj as DataFormatProvider);
         }
-
-        //public override int GetHashCode()
-        //{
-        //    FormatId
-        //}
 
         public override string ToString()
         {
@@ -70,28 +55,10 @@ namespace ClipboardHelper.FormatProviders
         }
     }
 
-    public class FormatedAttribute : Attribute
-    {
-        public FormatedAttribute(string format)
-        {
-            this.Format = format;
-        }
-
-        public string Format { get; set; }
-    }
     public class NonSerializableAttribute : Attribute
     {
     }
-    public class FormatedNumericAttribute : FormatedAttribute
-    {
-        public FormatedNumericAttribute() : base("D")
-        {
-        }
-        public FormatedNumericAttribute(string format) : base(format)
-        {
-        }
-    }
-
+    
     public class UnicodeStringSerializer
     {
         public byte[] Serialize(string data)
@@ -107,8 +74,12 @@ namespace ClipboardHelper.FormatProviders
             return Encoding.Unicode.GetString(data);
         }
     }
-    public abstract class StandartUnicodeTextProviderBase: DataFormatProvider<string>
+    public abstract class StandartUnicodeTextProviderBase: DataFormatProvider
     {
+        protected StandartUnicodeTextProviderBase()
+        {
+            Text = string.Empty;
+        }
         private readonly StandardFormatIdWraper formatIdWraper;
         private UnicodeStringSerializer provider;
         public StandartUnicodeTextProviderBase(StandartClipboardFormats standartClipboardFormat)
@@ -121,14 +92,17 @@ namespace ClipboardHelper.FormatProviders
             get { return formatIdWraper.FormatName; }
         }
 
-        public override byte[] Serialize(string data)
+        public override object Data { get { return Text; } }
+        public string Text { get; set; }
+
+        public override byte[] Serialize()
         {
-            return provider.Serialize(data);
+            return provider.Serialize(Text);
         }
-        
-        public override string Deserialize(byte[] data)
+
+        protected override void DeserializeData(byte[] data)
         {
-            return provider.Deserialize(data);
+            Text = provider.Deserialize(data);
         }
     }
 
@@ -138,7 +112,7 @@ namespace ClipboardHelper.FormatProviders
         public FileDropProvider(): base(StandartClipboardFormats.HDrop){}
     }
 
-    public class UnicodeFileNameProvider :  DataFormatProvider<FileInfo>
+    public class UnicodeFileNameProvider :  DataFormatProvider
     {
         private UnicodeStringSerializer provider;
         public UnicodeFileNameProvider()
@@ -150,15 +124,22 @@ namespace ClipboardHelper.FormatProviders
             get { return "FileNameW"; }
         }
 
-        public override byte[] Serialize(FileInfo file)
+        public FileInfo File { get; set; }
+
+        public override byte[] Serialize()
         {
-            return provider.Serialize(file.FullName);
+            return provider.Serialize(File.FullName);
         }
 
-        public override FileInfo Deserialize(byte[] data)
+        public override object Data
         {
-            var filePath= provider.Deserialize(data);
-            return new FileInfo(filePath);
+            get { return File; }
+        }
+
+        protected override void DeserializeData(byte[] data)
+        {
+            var filePath = provider.Deserialize(data);
+            File= new FileInfo(filePath);
         }
     }
 }

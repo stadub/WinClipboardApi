@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClipboardHelper;
 using ClipboardHelper.Watcher;
-using ClipboardHelper.Win32;
-using ClipboardHelperTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;
 using Clpbrd = System.Windows.Forms.Clipboard;
-using Utils;
 
-namespace ClipbordHelperTest
+namespace ClipboardHelperTest
 {
     [TestClass]
     public class ClipbordWatcherTest
@@ -76,7 +71,8 @@ namespace ClipbordHelperTest
                 var provider = new UnicodeTextProvider();
                 clipboard.Open();
                 clipboard.Clear();
-                clipboard.SetData(testString, provider);
+                provider.Text = testString;
+                clipboard.SetData(provider);
             }
 
             bool destroyMsgReceived = false;
@@ -149,7 +145,8 @@ namespace ClipbordHelperTest
                 {
                     renderFormatRequested = true;
                     var clipboard = Clipboard.CreateReadWrite(watcher);
-                    clipboard.SetRequestedData(testString, provider);
+                    provider.Text = testString;
+                    clipboard.SetRequestedData(provider);
                 };
                 Thread.Sleep(100);
                 text = Clpbrd.GetText(TextDataFormat.UnicodeText);
@@ -170,7 +167,8 @@ namespace ClipbordHelperTest
                 var provider = new UnicodeTextProvider();
                 clipboard.Open();
                 clipboard.Clear();
-                clipboard.SetData(testString, provider);
+                provider.Text = testString;
+                clipboard.SetData(provider);
             }
 
             bool destroyMsgReceived = false;

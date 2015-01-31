@@ -6,19 +6,17 @@ using System.Threading;
 using System.Windows.Forms;
 using ClipboardHelper;
 using ClipboardHelper.FormatProviders;
-using ClipboardHelper.Win32;
-using ClipboardHelperTest;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;
 using Clpbrd=System.Windows.Forms.Clipboard;
 
-namespace ClipbordHelperTest
+namespace ClipboardHelperTest
 {
     [TestClass]
     public class ClipboardTest
     {
 
-        private const string testString = "Lorem ipsum dolor sit amet";
+        private const string testString = "Lorem ipsum dolor sit amet Ё";
 
         [TestMethod]
         public void ShouldClearClipbord()
@@ -45,7 +43,8 @@ namespace ClipbordHelperTest
                 var dataAvalable = clipboard.IsDataAvailable(provider);
                 Assert.IsTrue(dataAvalable);
                 clipboard.OpenReadOnly();
-                data = clipboard.GetData(provider);
+                clipboard.GetData(provider);
+                data = provider.Text;
                 clipboard.Close();
             }
             
@@ -64,11 +63,13 @@ namespace ClipbordHelperTest
                 var provider = new UnicodeTextProvider();
                 clipboard.Open();
                 clipboard.Clear();
-                clipboard.SetData(testString,provider);
+                provider.Text = testString;
+                clipboard.SetData(provider);
                 clipboard.Close();
             }
-
-            Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText), testString);
+            var curText = Clpbrd.GetData("UnicodeText");
+            var formats=Clpbrd.GetDataObject().GetFormats();
+            Assert.AreEqual(curText, testString);
         }
 
         [TestMethod]
@@ -79,8 +80,8 @@ namespace ClipbordHelperTest
             using (var clipboard = Clipboard.CreateReadOnly())
             {
                 clipboard.OpenReadOnly();
-
-                formats = clipboard.GetAvalibleFromats(new []{new UnicodeTextProvider()}).ToList();
+                clipboard.RegisterFormatProvider(()=>new UnicodeTextProvider());
+                formats = clipboard.GetAvalibleFromats().ToList();
                 clipboard.Close();
             }
             Assert.IsTrue(formats.Any(provider => provider.FormatId == "CF_UNICODETEXT"));
@@ -95,7 +96,7 @@ namespace ClipbordHelperTest
             {
                 clipboard.OpenReadOnly();
 
-                formats = clipboard.GetAvalibleFromats(new IClipbordFormatProvider<int>[] { }).ToList();
+                formats = clipboard.GetAvalibleFromats(true).ToList();
                 clipboard.Close();
             }
             Assert.IsTrue(formats[0] is UnknownFormatProvider);
@@ -103,26 +104,13 @@ namespace ClipbordHelperTest
 
         [TestMethod]
         [ExpectedException(typeof(ClipboardClosedException))]
-        public void ShouldThrowClipboardClosedExceptionWhenClipboardNotOpened()
-        {
-            using (var clipboard = Clipboard.CreateReadOnly())
-            {
-                //clipboard.OpenReadOnly();
-
-                var formats=clipboard.GetAvalibleFromats(new[] { new UnicodeTextProvider() });
-                //clipboard.Close();
-            }
-            
-        }
-        [TestMethod]
-        [ExpectedException(typeof(ClipboardClosedException))]
         public void ShouldThrowClipboardClosedExceptionWhenTryingToEnumerateAfterClose()
         {
             using (var clipboard = Clipboard.CreateReadOnly())
             {
                 clipboard.OpenReadOnly();
-
-                var formats=clipboard.GetAvalibleFromats(new[] { new UnicodeTextProvider() });
+                clipboard.RegisterFormatProvider(()=>new UnicodeTextProvider());
+                var formats=clipboard.GetAvalibleFromats();
                 clipboard.Close();
                 formats.ToList();
             }
@@ -156,7 +144,8 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             var bytes=serializer.Serialize(TextHtmlData);
 
             HtmlFormatProvider provider= new HtmlFormatProvider();
-            var result=provider.Deserialize(bytes);
+            provider.Deserialize(bytes);
+            var result = provider.HtmlData;
 
             Assert.AreEqual(result.StartHTML, 000000194);
             Assert.AreEqual(result.EndHTML,000001170);
@@ -191,8 +180,8 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
                 Html = results[1]
             };
 
-            HtmlFormatProvider provider= new HtmlFormatProvider();
-            byte[] result = provider.Serialize(data);
+            HtmlFormatProvider provider = new HtmlFormatProvider(data);
+            byte[] result = provider.Serialize();
             UnicodeStringSerializer serializer = new UnicodeStringSerializer();
             var text = serializer.Deserialize(result);
             Assert.AreEqual(text, TextHtmlData);
@@ -225,8 +214,8 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             data.AddQuoteText("Delorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
             data.AddQuoteText("<<< ", quote: true);
 
-            SkypeFormatProvider provider= new SkypeFormatProvider();
-            byte[] result = provider.Serialize(data);
+            SkypeFormatProvider provider = new SkypeFormatProvider(data);
+            byte[] result = provider.Serialize();
             UnicodeStringSerializer serializer = new UnicodeStringSerializer();
             var text = serializer.Deserialize(result);
             Assert.AreEqual(skypeQuote, text);
@@ -238,7 +227,8 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             var bytes = serializer.Serialize(skypeQuote);
 
             SkypeFormatProvider provider = new SkypeFormatProvider();
-            var result = provider.Deserialize(bytes);
+            provider.Deserialize(bytes);
+            var result = provider.Quote;
 
             Assert.AreEqual(result.Author , "pater_patriae1");
             Assert.AreEqual(result.AuthorName , "Marcus Tullius Cicero");

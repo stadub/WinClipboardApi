@@ -12,14 +12,18 @@ namespace ClipboardHelper.FormatProviders
         public string FormatId { get { return string.Empty; } }
         public uint Id { get; private set; }
 
-        public byte[] Serialize(object data)
+        public object Data { get { return Bytes; } }
+        public byte[] Bytes { get; set; }
+
+        public byte[] Serialize()
         {
-            throw new NotSupportedException();
+            return Bytes;
         }
 
-        public object Deserialize(byte[] data)
+        public void Deserialize(byte[] data)
         {
-            throw new NotSupportedException();
+            Bytes = data;
         }
+
     }
 }

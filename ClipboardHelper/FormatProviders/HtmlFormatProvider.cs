@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Utils;
 
 namespace ClipboardHelper.FormatProviders
 {
@@ -37,13 +38,19 @@ namespace ClipboardHelper.FormatProviders
 
     }
 
-    
-    public class HtmlFormatProvider:DataFormatProvider<HtmlClipboardFormatData>
+
+    public class HtmlFormatProvider : DataFormatProvider
     {
-        UnicodeStringSerializer serializer;
-        public HtmlFormatProvider()
+        private UnicodeStringSerializer serializer;
+
+        public HtmlFormatProvider(HtmlClipboardFormatData htmlData)
         {
             serializer = new UnicodeStringSerializer();
+            HtmlData = htmlData;
+        }
+
+        public HtmlFormatProvider() : this(new HtmlClipboardFormatData())
+        {
         }
 
         /// <summary>
@@ -68,7 +75,7 @@ namespace ClipboardHelper.FormatProviders
         ///          Any character, any number of repetitions
         /// </summary>
         public static Regex htmlDoc = new Regex(
-              "^(<.*)",
+            "^(<.*)",
             RegexOptions.Multiline
             | RegexOptions.Singleline
             | RegexOptions.CultureInvariant
@@ -81,67 +88,51 @@ namespace ClipboardHelper.FormatProviders
             get { return "HTML Format"; }
         }
 
-        public override byte[] Serialize(HtmlClipboardFormatData data)
+        public override byte[] Serialize()
         {
-            StringBuilder clipboardDataBuilder= new StringBuilder();
-            var properties = typeof(HtmlClipboardFormatData).GetProperties();
+            StringBuilder clipboardDataBuilder = new StringBuilder();
+            var properties = typeof (HtmlClipboardFormatData).GetProperties();
             foreach (var property in properties)
             {
                 var nonSerializable = property.GetCustomAttribute<NonSerializableAttribute>();
                 if (nonSerializable != null)
                     continue;
 
-                var value=GetPropertyValue(property, data);
+                var value = TypeHelpers.GetPropertyValue(property, HtmlData);
                 var name = property.Name;
-                clipboardDataBuilder.AppendFormat("{0}:{1}",name,value);
+                clipboardDataBuilder.AppendFormat("{0}:{1}", name, value);
                 clipboardDataBuilder.AppendLine();
             }
-            clipboardDataBuilder.Append(data.Html);
-            var dataString= clipboardDataBuilder.ToString();
+            clipboardDataBuilder.Append(HtmlData.Html);
+            var dataString = clipboardDataBuilder.ToString();
             return serializer.Serialize(dataString);
         }
 
-        private string GetPropertyValue(PropertyInfo property, object instance)
+
+        public HtmlClipboardFormatData HtmlData { get; private set; }
+
+        public override object Data
         {
-            var propertyValue = property.GetValue(instance);
-
-            var formated = property.GetCustomAttribute<FormatedAttribute>();
-            if (formated != null)
-            {
-                Debug.Assert(formated.Format != null);
-                var propertyConverter = (IFormattable)propertyValue;
-                var formatedString = propertyConverter.ToString(formated.Format, CultureInfo.InvariantCulture);
-                return formatedString;
-            }
-            try
-            {
-                var convertedValue = Convert.ChangeType(propertyValue, typeof(string));
-                return (string)convertedValue;
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return propertyValue.ToString();
-
-        }
-        public override HtmlClipboardFormatData Deserialize(byte[] data)
-        {
-            var htmlData=serializer.Deserialize(data);
-
-            return Parse(htmlData);
+            get { return HtmlData; }
         }
 
-        private HtmlClipboardFormatData Parse(string stringData)
+        protected override void DeserializeData(byte[] data)
+        {
+            var htmlData = serializer.Deserialize(data);
+
+            Parse(htmlData);
+        }
+
+        protected void Parse(string stringData)
         {
             string[] results = htmlDoc.Split(stringData);
 
-            Debug.Assert(results.Length > 1 && results.Length<4);
-            if(results.Length==3)
-                Debug.Assert(results[2].Trim().Length==0);
+            Debug.Assert(results.Length > 1 && results.Length < 4);
+            if (results.Length == 3)
+                Debug.Assert(results[2].Trim().Length == 0);
 
 
-            var properties = typeof(HtmlClipboardFormatData).GetProperties();
+            var properties = typeof (HtmlClipboardFormatData).GetProperties();
 
             var htmlClipboardData = new HtmlClipboardFormatData();
             htmlClipboardData.Html = results[1];
@@ -150,43 +141,19 @@ namespace ClipboardHelper.FormatProviders
             MatchCollection ms = groupsRegex.Matches(results[0]);
             foreach (Match match in ms)
             {
-                if(!match.Success)
+                if (!match.Success)
                     continue;
 
                 string name = match.Groups["GroupName"].Value;
                 var value = match.Groups["GroupValue"].Value.Trim();
                 var property = properties.FirstOrDefault(x => x.Name == name);
 
-                SetPropertyValue(property, htmlClipboardData,value);
+                TypeHelpers.SetPropertyValue(property, htmlClipboardData, value);
             }
-            return htmlClipboardData;
+            HtmlData = htmlClipboardData;
 
-        }
-
-        private static void SetPropertyValue(PropertyInfo property, object instance,string value)
-        {
-            Debug.Assert(property != null);
-            if (property == null||instance==null|value==null)
-                return;
-            var propertyType = property.PropertyType;
-            var stringType = typeof (string);
-            if (propertyType == stringType)
-            {
-                property.SetValue(instance, value);
-                return;
-            }
-            try
-            {
-                var convertedValue = Convert.ChangeType(value, propertyType);
-                property.SetValue(instance, convertedValue);
-                return;
-            }
-            catch (InvalidCastException)
-            {
-            }
-            //Throws MissingMethodException if corresponding constructor not found
-            var propValue = Activator.CreateInstance(propertyType, value);
-            property.SetValue(instance, propValue);
         }
     }
+
+
 }
