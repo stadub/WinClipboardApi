@@ -1,6 +1,6 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Utils.Test
 {
@@ -87,7 +87,7 @@ namespace Utils.Test
 
             var reslut = locator.Resolve<IList<int>>();
 
-            Assert.ReferenceEquals(reslut, list);
+            ReferenceEquals(reslut, list);
         }
 
         [TestMethod]
@@ -222,7 +222,7 @@ namespace Utils.Test
             Assert.IsNotNull(reslut);
             var instance=reslut as TestClassWPropertyInjection;
 
-            Assert.ReferenceEquals(instance.Prop, list);
+            ReferenceEquals(instance.Prop, list);
         }
 
         [TestMethod]
@@ -276,7 +276,7 @@ namespace Utils.Test
             Assert.IsNotNull(reslut);
             var instance = reslut as TestClassWProperty;
 
-            Assert.ReferenceEquals(instance.Prop, list);
+            ReferenceEquals(instance.Prop, list);
         }
 
         [TestMethod]
@@ -320,9 +320,22 @@ namespace Utils.Test
             var instance = reslut as TestClassWProperty;
             var instance2 = reslut2 as TestClassWProperty;
 
-            Assert.ReferenceEquals(instance.Prop, list);
+            ReferenceEquals(instance.Prop, list);
 
             Assert.IsNull(instance2.Prop);
+        }
+
+
+        [TestMethod]
+        public void ShouldResolveInteger()
+        {
+
+            var locator = new ServiceLocator();
+            locator.RegisterType<int, int>();
+
+            var defaultValue=locator.ResolveType<int>();
+
+            Assert.IsTrue((int)defaultValue == 0);
         }
     }
 }

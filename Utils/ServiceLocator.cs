@@ -1,27 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
+using System.Runtime.Serialization;
+using Utils.ServiceLocatorInfo;
 
 namespace Utils
 {
     public partial class ServiceLocator:IDisposable
     {
-        Dictionary<Type, object> registeredInstances = new Dictionary<Type, object>();
-        Dictionary<Type, object> registeredInitializers = new Dictionary<Type, object>();
+        protected Dictionary<Type, object> registeredInstances = new Dictionary<Type,  object>();
+        protected Dictionary<Type, object> registeredInitializers = new Dictionary<Type, object>();
 
-        Dictionary<Type, List<TypeRegistrationInfo>> registeredTypes = new Dictionary<Type, List<TypeRegistrationInfo>>();
+        protected Dictionary<Type, List<TypeRegistrationInfo>> registeredTypes = new Dictionary<Type, List<TypeRegistrationInfo>>();
 
         #region Register methods
-        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>()
+        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>() where TClass:TInterface
         {
             return RegisterType<TInterface, TClass>(string.Empty);
         }
 
-        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>(string name)
+        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>(string name) where TClass : TInterface
         {
             var interfaceType = typeof(TInterface);
             var classType = typeof(TClass);
@@ -47,46 +46,46 @@ namespace Utils
             registeredInitializers.Add(interfaceType, typeResolver);
         }
 
-        public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class
+        public void RegisterInstance<TInterface, TValue>(TValue value) where TValue : class,TInterface
         {
             var interfaceType = typeof(TInterface);
-            CheckDuplicated(interfaceType,string.Empty);
-            registeredInstances.Add(interfaceType, value);
-        }
+            CheckDuplicated(interfaceType, string.Empty);
 
+            registeredInstances[interfaceType] = value;
+        }
 
         protected virtual void CheckDuplicated(Type interfaceType,string name)
         {
             if (registeredTypes.ContainsKey(interfaceType))
             {
-                var allInstances=registeredTypes[interfaceType];
-                var index = allInstances.FindIndex(info => info.RegistrationName == name);
+                var allTypes = registeredTypes[interfaceType];
+                var index = allTypes.FindIndex(info => info.RegistrationName == name);
                 if (index!=-1)
                     throw new TypeAllreadyRegisteredException(interfaceType, "Type-Type pair allready registered (via RegisterType)");
+            }
 
+            if (registeredInstances.ContainsKey(interfaceType))
+            {
+                throw new TypeAllreadyRegisteredException(interfaceType, "Type instance allready registered (via RegisterInstance)");
             }
                 
-            if (registeredInstances.ContainsKey(interfaceType))
-                throw new TypeAllreadyRegisteredException(interfaceType, "Type instance allready registered (via RegisterInstance)");
 
             if (registeredInitializers.ContainsKey(interfaceType))
                 throw new TypeAllreadyRegisteredException(interfaceType, "Type allready registered (via RegisterInitializer)");
         }
         #endregion
+
         #region Resolvers
-
-
-
         public T Resolve<T>()
         {
             var @type = typeof(T);
             return (T)Resolve(@type);
         }
 
-        public object Resolve(Type @type)
+        protected object Resolve(Type @type)
         {
             object result;
-            if (TryResolveInstance(@type,out result))
+            if (TryResolveInstance(@type,string.Empty,out result))
                 return result;
             if (TryResolveInitializer(@type, out result))
                 return result;
@@ -111,9 +110,13 @@ namespace Utils
 
         public T ResolveInstance<T>()
         {
+            return ResolveInstance<T>(string.Empty);
+        }
+        public T ResolveInstance<T>(string name)
+        {
             object result;
             var @type = typeof(T);
-            if (!TryResolveInstance(@type,out result))
+            if (!TryResolveInstance(@type,name,out result))
                 throw new TypeNotResolvedException(typeof(T));
 
             return (T)result;
@@ -129,11 +132,11 @@ namespace Utils
             return (T)result;
         }
 
-        protected virtual bool TryResolveInstance(Type @type,out object value)
+        protected virtual bool TryResolveInstance(Type @type,string name,out object value)
         {
             if (registeredInstances.ContainsKey(@type))
             {
-                value = registeredInstances[@type];
+                value= registeredInstances[@type];
                 return true;
             }
             value = TypeHelpers.GetDefault(@type);
@@ -164,15 +167,20 @@ namespace Utils
             var typeRegistrations= registeredTypes[@type];
             var registration=typeRegistrations.FirstOrDefault(info => info.RegistrationName == name);
             if (registration == null) throw new TypeNotResolvedException(type,"Cannot find type registration");
-            var ctor = GetConstructor(registration);
 
-            value = CreateInstance(registration.DestType,type, ctor);
+            var ctor = registration.TryGetConstructor();
+
+            //value types have no default constructor and shpuld be initalized by default value
+            if (ctor == null && registration.DestType.IsValueType)
+                value=TypeHelpers.GetDefault(registration.DestType);
+            else
+                value = CreateInstance(registration.DestType, type, ctor);
 
             InjectTypeProperties(value, registration);
             return true;
         }
 
-        private object CreateInstance(Type destType, Type sourceType, ConstructorInfo ctor)
+        protected object CreateInstance(Type destType, Type sourceType, ConstructorInfo ctor)
         {
             //resolving constructor parametrs
             var paramsDef = ctor.GetParameters();
@@ -216,30 +224,6 @@ namespace Utils
         }
 
 
-        private ConstructorInfo GetConstructor(TypeRegistrationInfo type)
-        {
-            //enumerating only public ctors
-            var ctors = type.DestType.GetConstructors();
-
-            //search for constructor marked as [UseConstructor]
-            foreach (var ctor in ctors)
-            {
-                var attributes=ctor.GetCustomAttributes(typeof(UseConstructorAttribute),false);
-                if(attributes.Any())
-                    return ctor;
-            }
-            //try to find default constructor
-            foreach (var ctor in ctors)
-            {
-                var args=ctor.GetParameters();
-                if(args.Length==0)
-                    return ctor;
-            }
-            //try to use first public
-            if(ctors.Length>0)
-                return ctors[0];
-            throw new ConstructorNotResolvedException(type.DestType);
-        }
 
         static Type injectionFlagType = typeof(InjectAttribute);
         static Func<CustomAttributeData, bool> injectField = (x) => x.AttributeType.IsAssignableFrom(injectionFlagType);
@@ -251,6 +235,14 @@ namespace Utils
 
         protected void InjectTypeProperties(object instance, TypeRegistrationInfo type)
         {
+            //Inject registered property injectction resolvers
+            var injectPropertiesReslovers = type.PropertyInjectionResolvers;
+            foreach (var prop in injectPropertiesReslovers)
+            {
+                var propValue = Resolve(prop.Value);
+                prop.Key.SetValue(instance, propValue);
+            }
+            
             //Inject registered property injections
             var injectProperties = type.PropertyInjections;
             foreach (var prop in injectProperties)
@@ -317,22 +309,7 @@ namespace Utils
         }
     }
 
-
-
-    public class TypeRegistrationInfo
-    {
-        public TypeRegistrationInfo(Type destType, string registrationName)
-        {
-            PropertyInjections = new List<PropertyInfo>();
-            DestType = destType;
-            RegistrationName = registrationName;
-        }
-        public List<PropertyInfo> PropertyInjections { get; private set; }
-        public Type DestType { get; private set; }
-        public string RegistrationName { get; private set; }
-    }
-
-#region ServiceLocatorExceptions
+    #region ServiceLocatorExceptions
     [Serializable]
     public class ServiceLocatorException : Exception
     {
@@ -341,8 +318,8 @@ namespace Utils
         public ServiceLocatorException(Type type, string message) : base(message) {Type=type; }
         public ServiceLocatorException(Type type, string message, Exception inner) : base(message, inner) { Type=type;}
         protected ServiceLocatorException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
+          SerializationInfo info,
+          StreamingContext context)
             : base(info, context) { }
     }
 
@@ -353,8 +330,8 @@ namespace Utils
         public TypeNotResolvedException(Type type, string message) : base(type,message) {}
         public TypeNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
         protected TypeNotResolvedException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
+          SerializationInfo info,
+          StreamingContext context)
             : base(info, context) { }
     }
     
@@ -365,8 +342,8 @@ namespace Utils
         public TypeNotSupportedException(Type type, string message) : base(type,message) {}
         public TypeNotSupportedException(Type type, string message, Exception inner) : base(type,message, inner) {}
         protected TypeNotSupportedException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
+          SerializationInfo info,
+          StreamingContext context)
             : base(info, context) { }
     }
 
@@ -377,8 +354,8 @@ namespace Utils
         public ConstructorNotResolvedException(Type type, string message) : base(type,message) {}
         public ConstructorNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
         protected ConstructorNotResolvedException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
+          SerializationInfo info,
+          StreamingContext context)
             : base(info, context) { }
     }
 
@@ -389,8 +366,8 @@ namespace Utils
         public TypeAllreadyRegisteredException(Type type, string message) : base(type, message) { }
         public TypeAllreadyRegisteredException(Type type, string message, Exception inner) : base(type, message, inner) { }
         protected TypeAllreadyRegisteredException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
+          SerializationInfo info,
+          StreamingContext context)
             : base(info, context) { }
     }
 #endregion
