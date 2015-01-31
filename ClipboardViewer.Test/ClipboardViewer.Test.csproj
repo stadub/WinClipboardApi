@@ -60,6 +60,10 @@
       <Project>{E7B6D4C3-94E3-45C9-836D-464661C06856}</Project>
       <Name>ClipboardViewer</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Utils.Wpf\Utils.Wpf.csproj">
+      <Project>{E443A1C6-6077-4C03-A2C7-BA93C748011B}</Project>
+      <Name>Utils.Wpf</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
