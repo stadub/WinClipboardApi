@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace SkypeHelper.ViewModel
+namespace ClipboardViewer.MvvmBase
 {
     public class RelayCommand : ICommand
     {

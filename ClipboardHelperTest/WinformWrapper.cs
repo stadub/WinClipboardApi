@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using ClipboardHelper.Watcher;
-using ClipboardHelper.Win32;
 
 namespace ClipboardHelperTest
 {

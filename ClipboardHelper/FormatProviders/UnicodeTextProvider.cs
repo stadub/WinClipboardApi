@@ -1,6 +1,4 @@
-﻿using ClipboardHelper.FormatProviders;
-
-namespace ClipboardHelper
+﻿namespace ClipboardHelper.FormatProviders
 {
     public class UnicodeTextProvider : StandartUnicodeTextProviderBase
     {

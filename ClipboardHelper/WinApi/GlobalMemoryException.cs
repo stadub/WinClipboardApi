@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace ClipboardHelper.Win32
+namespace ClipboardHelper.WinApi
 {
     [Serializable]
     public class GlobalMemoryException : Exception

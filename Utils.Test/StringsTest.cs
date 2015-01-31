@@ -1,6 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Utils;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Utils.Test
 {
     [TestClass]

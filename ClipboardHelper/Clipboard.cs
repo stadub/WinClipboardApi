@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using ClipboardHelper.FormatProviders;
 using ClipboardHelper.Watcher;
-using ClipboardHelper.Win32;
+using ClipboardHelper.WinApi;
 using Utils;
 
 namespace ClipboardHelper

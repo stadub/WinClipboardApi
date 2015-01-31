@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ClipboardHelper.FormatProviders
+﻿namespace ClipboardHelper.FormatProviders
 {
     public class UnknownFormatProvider:  IClipbordFormatProvider
     {

@@ -7,7 +7,7 @@ using Utils.ServiceLocatorInfo;
 
 namespace Utils
 {
-    public partial class ServiceLocator:IDisposable
+    public class ServiceLocator:IDisposable
     {
         protected Dictionary<Type, object> registeredInstances = new Dictionary<Type,  object>();
         protected Dictionary<Type, object> registeredInitializers = new Dictionary<Type, object>();

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
-using ClipboardHelper;
+using ClipboardHelper.FormatProviders;
 using ClipboardHelper.Watcher;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;

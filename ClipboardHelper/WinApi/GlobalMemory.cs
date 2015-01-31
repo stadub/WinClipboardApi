@@ -2,9 +2,8 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ClipboardHelper.WinApi;
 
-namespace ClipboardHelper.Win32
+namespace ClipboardHelper.WinApi
 {
     [Flags]
     enum GlobalMemoryFlags:uint

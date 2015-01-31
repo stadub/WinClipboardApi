@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
-
 namespace Utils
 {
     public class TypeHelpers
