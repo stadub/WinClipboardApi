@@ -1,20 +1,51 @@
 ﻿<Window x:Class="ClipboardViewer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
+        xmlns:mvvmBase="clr-namespace:ClipboardViewer.MvvmBase"
+        Title="MainWindow" Height="350" Width="525"
+        DataContext="{Binding MainPage, Source={StaticResource ViewModelLocator}}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ClipboardViewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid>
+        <Grid.Resources>
+            <mvvmBase:VisibilityConverter x:Key="VisibilityConverter" />
+        </Grid.Resources>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="10"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="40"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ContentControl Grid.Column="1"  Name="viewContainer"/>
-        <ListView Name="lwAvailableFormats"/>
-        <CheckBox Name="cbSubscribe" Grid.Column="1" Grid.Row="2">Subscribe clipboard changes</CheckBox>
-        <Button Name="btReload"  Grid.Row="1" Margin="10" Width="150">Reload clipboard data</Button>
+        <ContentControl   Name="ViewContainer"/>
+        <ListView Grid.Row="0" Grid.Column="1" Name="LwAvailableFormats" ItemsSource="{Binding }">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <CheckBox Name="CbSubscribe" Grid.Column="1" Grid.Row="1" IsChecked="{Binding AutoUpdate}">Subscribe clipboard changes</CheckBox>
+        <Button Name="BtReload"  Grid.Row="1" Grid.Column="0" Margin="10" Width="150">Reload clipboard data
+            <Button.Visibility>
+                <Binding 
+                    Converter="{StaticResource VisibilityConverter  }" ConverterParameter="true" 
+                    Path="IsChecked"  ElementName="CbSubscribe"/>
+            </Button.Visibility>
+            <Button.Command>
+                <Binding>
+                    
+                </Binding>
+            </Button.Command>
+        </Button>
+        <!--Visibility="{Binding Converter=BooleanToVisibilityConverter, Path=IsChecked, ElementName=CbSubscribe }"-->
     </Grid>
 </Window>

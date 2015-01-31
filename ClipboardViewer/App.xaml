@@ -1,8 +1,16 @@
 ﻿<Application x:Class="ClipboardViewer.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:clipboardViewer="clr-namespace:ClipboardViewer"
+             xmlns:utils="clr-namespace:Utils;assembly=Utils"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <utils:ServiceLocator x:Key="ServiceLocator"/>
+
+        <ObjectDataProvider x:Key="ViewModelLocator" ObjectType="{x:Type clipboardViewer:ViewModelLocator}">
+            <ObjectDataProvider.ConstructorParameters>
+                <StaticResource ResourceKey="ServiceLocator" />
+            </ObjectDataProvider.ConstructorParameters>
+        </ObjectDataProvider>
     </Application.Resources>
 </Application>
