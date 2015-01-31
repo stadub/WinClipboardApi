@@ -4,20 +4,23 @@ using System.Linq;
 using System.Windows.Input;
 using ClipboardHelper;
 using ClipboardHelper.FormatProviders;
-using ClipboardViewer.MvvmBase;
 using Utils;
+using Utils.Wpf.MvvmBase;
 
 namespace ClipboardViewer.ViewModel
 {
-    public class MainWindowViewModel:ViewModelBase
+
+    public class MainWindowViewModel : ViewModelBase
     {
         private readonly IClipboard clipboard;
+        private readonly TypeMapper mapper;
         private readonly Func<IClipbordFormatProvider>[] clipboardFormats;
         private bool autoUpdate;
 
-        public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats)
+        public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats,TypeMapper mapper)
         {
             this.clipboard = clipboard;
+            this.mapper = mapper;
             this.clipboardFormats = accessibleFromats as Func<IClipbordFormatProvider>[] ?? accessibleFromats.ToArray();
             clipboardFormats.ForEach(clipboard.RegisterFormatProvider);
             ReloadClipboardContent= new RelayCommand(UpdateFormats);

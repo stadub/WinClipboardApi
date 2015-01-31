@@ -3,11 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:clipboardViewer="clr-namespace:ClipboardViewer"
              xmlns:utils="clr-namespace:Utils;assembly=Utils"
+             xmlns:designTime="clr-namespace:ClipboardViewer.ViewModel.DesignTime"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <utils:ServiceLocator x:Key="ServiceLocator"/>
 
+        <ObjectDataProvider x:Key="Bootstraper" ObjectType="{x:Type clipboardViewer:Bootstraper}">
+            <ObjectDataProvider.ConstructorParameters>
+                <StaticResource ResourceKey="ServiceLocator" />
+            </ObjectDataProvider.ConstructorParameters>
+        </ObjectDataProvider>
+
         <ObjectDataProvider x:Key="ViewModelLocator" ObjectType="{x:Type clipboardViewer:ViewModelLocator}">
+            <ObjectDataProvider.ConstructorParameters>
+                <StaticResource ResourceKey="ServiceLocator" />
+            </ObjectDataProvider.ConstructorParameters>
+        </ObjectDataProvider>
+
+
+        <ObjectDataProvider x:Key="d:Bootstraper" ObjectType="{x:Type designTime:DBootstraper}">
+            <ObjectDataProvider.ConstructorParameters>
+                <StaticResource ResourceKey="ServiceLocator" />
+            </ObjectDataProvider.ConstructorParameters>
+        </ObjectDataProvider>
+        
+        <ObjectDataProvider x:Key="d:ViewModelLocator" ObjectType="{x:Type designTime:DViewModelLocator}">
             <ObjectDataProvider.ConstructorParameters>
                 <StaticResource ResourceKey="ServiceLocator" />
             </ObjectDataProvider.ConstructorParameters>

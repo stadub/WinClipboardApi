@@ -61,7 +61,6 @@
     <Compile Include="ViewModel\DesignTime\DViewModelLocator.cs" />
     <Compile Include="ViewModel\FormatProviderViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
-    <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="View\ClipboardContent\TextView.xaml.cs">
       <DependentUpon>TextView.xaml</DependentUpon>
     </Compile>

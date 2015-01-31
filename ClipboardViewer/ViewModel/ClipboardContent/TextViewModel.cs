@@ -1,4 +1,4 @@
-﻿using ClipboardViewer.MvvmBase;
+﻿using Utils.Wpf.MvvmBase;
 
 namespace ClipboardViewer.ViewModel.ClipboardContent
 {
