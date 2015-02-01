@@ -2,12 +2,13 @@
 {
     public class UnknownFormatProvider:  IClipbordFormatProvider
     {
-        internal UnknownFormatProvider(uint id)
+        public UnknownFormatProvider(uint id,string formatId)
         {
+            FormatId = formatId;
             this.Id = id;
         }
 
-        public string FormatId { get { return string.Empty; } }
+        public string FormatId { get; private set; }
         public uint Id { get; private set; }
 
         public object Data { get { return Bytes; } }

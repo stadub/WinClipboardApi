@@ -74,7 +74,7 @@ namespace ClipboardHelper
         public void Open()
         {
             if (ClipboardOwner == IntPtr.Zero)
-                throw new OpenClipboardException("Empty window handle is allowed only for Read only mode.To be able to write to clipboard Clipboard(IntPtr ownerHwnd) constructor should be used.");
+                throw new OpenClipboardException("Empty window handle is allowed  only for Read only mode.To be able to write to clipboard Clipboard(IntPtr ownerHwnd) constructor should be used.");
             OpenInt();
         }
 
@@ -294,7 +294,11 @@ namespace ClipboardHelper
                         if (includeUnknown)
                         {
                             foreach (var unknownformatId in unknownformatsIds)
-                                yield return new UnknownFormatProvider(unknownformatId);
+                            {
+                                var formatNameBuilder = new StringBuilder(100);
+                                GetClipboardFormatName(unknownformatId, formatNameBuilder, 100);
+                                yield return new UnknownFormatProvider(unknownformatId, formatNameBuilder.ToString());
+                            }
                         }
                         yield break; 
                     }
@@ -313,7 +317,7 @@ namespace ClipboardHelper
             if (Owned)
                 CloseClipboard();
             Owned = false;
-            ClipboardOwner = new IntPtr(-1);
+            ClipboardOwner = IntPtr.Zero;
         }
 
 
