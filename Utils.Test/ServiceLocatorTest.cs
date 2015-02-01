@@ -39,17 +39,17 @@ namespace Utils.Test
     class TestClassWSimpleInjectionCtor : ITestClass
     {
         public object b;
-        public TestClassWSimpleInjectionCtor([Inject("2")]int a){ b = a; }
+        public TestClassWSimpleInjectionCtor([InjectValue("2")]int a){ b = a; }
     }
 
     class TestClassWInjectionCtor : ITestClass
     {
-        public TestClassWInjectionCtor([Inject()]IList<int> a) { }
+        public TestClassWInjectionCtor([InjectValue()]IList<int> a) { }
     }
     
     class TestClassWRetvalCtor : ITestClass
     {
-        public TestClassWRetvalCtor([Inject("2")]ref int a) { }
+        public TestClassWRetvalCtor([InjectValue("2")]ref int a) { }
     }
 
 
@@ -57,11 +57,28 @@ namespace Utils.Test
     {
         public IList<int> Prop { get; set; }
     }
-    
+
+    class TestClassWTestClassProperty : ITestClass
+    {
+        public ITestClass Prop { get; set; }
+    }
+
+    class TestClassWPropertyValueInjection : ITestClass
+    {
+        [InjectValue("2")]
+        public int Prop { get; set; }
+    }
+
     class TestClassWPropertyInjection : ITestClass
     {
-        [Inject()]
+        [InjectInstanceAttribute()]
         public IList<int> Prop{get;set;}
+    }
+
+    class TestClassWNamedPropertyInjection : ITestClass
+    {
+        [InjectInstanceAttribute("test")]
+        public ITestClass Prop { get; set; }
     }
 
     class TestClassWDispose : ITestClass,IDisposable
@@ -226,6 +243,35 @@ namespace Utils.Test
         }
 
         [TestMethod]
+        public void ShouldResolveTestClassWNamedPropertyInjection()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWNamedPropertyInjection>();
+            locator.RegisterType<ITestClass, TestClassWDispose>("test");
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWNamedPropertyInjection;
+
+            Assert.IsTrue(instance.Prop is TestClassWDispose);
+        }
+
+        [TestMethod]
+        public void ShouldResolveTestClassWPropertyValueInjection()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWPropertyValueInjection>();
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWPropertyValueInjection;
+
+            Assert.IsTrue(instance.Prop== 2);
+        }
+
+        [TestMethod]
         public void ShouldDistroyDisposableTypes()
         {
             var locator = new ServiceLocator();
@@ -271,6 +317,42 @@ namespace Utils.Test
             var list = new List<int>();
             locator.RegisterInstance<IList<int>, List<int>>(list);
 
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWProperty;
+
+            ReferenceEquals(instance.Prop, list);
+        }
+
+        [TestMethod]
+        public void ShouldResolveTestClassWNamedPropertyInjectionByExtension()
+        {
+
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWTestClassProperty>()
+                .InjectNamedProperty(classWProp => classWProp.Prop,"TestProp");
+            locator.RegisterType<ITestClass, TestClassWDispose>("TestProp");
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWTestClassProperty;
+
+            Assert.IsNotNull(instance);
+            Assert.IsTrue(instance.Prop is TestClassWDispose);
+        }
+
+        [TestMethod]
+        public void ShouldResolveTestClassWPropertyValueInjectionByExtension()
+        {
+            var list = new List<int>();
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWProperty>()
+                .InjectPropertyValue(classWProp => classWProp.Prop, list);
+            
             var reslut = locator.Resolve<ITestClass>();
 
             Assert.IsNotNull(reslut);

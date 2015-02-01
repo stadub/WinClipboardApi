@@ -5,19 +5,21 @@ using System.Reflection;
 
 namespace Utils.ServiceLocatorInfo
 {
-    public class TypeRegistrationInfo
+    internal class TypeRegistrationInfo
     {
         public TypeRegistrationInfo(Type destType, string registrationName)
         {
-            PropertyInjections = new List<PropertyInfo>();
-            PropertyInjectionResolvers = new Dictionary<PropertyInfo, Type>();
+            PropertyInjectionResolvers = new List<KeyValuePair<PropertyInfo, Type>>();
+            PropertyValueResolvers = new List<KeyValuePair<PropertyInfo, object>>();
+            PropertyInjections = new List<KeyValuePair<string, PropertyInfo>>();
             DestType = destType;
             RegistrationName = registrationName;
         }
-        public List<PropertyInfo> PropertyInjections { get; private set; }
+        public List<KeyValuePair<string, PropertyInfo>> PropertyInjections { get; private set; }
         public Type DestType { get; private set; }
         public string RegistrationName { get; private set; }
-        public Dictionary<PropertyInfo,Type> PropertyInjectionResolvers { get; set; }
+        public List<KeyValuePair<PropertyInfo,Type>> PropertyInjectionResolvers { get; set; }
+        public List<KeyValuePair<PropertyInfo,object>> PropertyValueResolvers { get; set; }
 
 
         public ConstructorInfo TryGetConstructor()
