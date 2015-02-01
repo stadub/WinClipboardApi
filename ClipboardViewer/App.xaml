@@ -4,7 +4,7 @@
              xmlns:clipboardViewer="clr-namespace:ClipboardViewer"
              xmlns:utils="clr-namespace:Utils;assembly=Utils"
              xmlns:designTime="clr-namespace:ClipboardViewer.ViewModel.DesignTime"
-             StartupUri="MainWindow.xaml">
+             StartupUri="View/MainWindow.xaml">
     <Application.Resources>
         <utils:ServiceLocator x:Key="ServiceLocator"/>
 

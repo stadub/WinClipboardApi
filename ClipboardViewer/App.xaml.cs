@@ -22,11 +22,7 @@ namespace ClipboardViewer
         ServiceLocator container;
         protected override void OnStartup(StartupEventArgs e)
         {
-            //ClipbordWatcher watcher = new ClipbordWatcher();
-            //watcher.StartListen();
-            //var acessibleFromats = Providers.GetCurrentProviders().ToList();
-
-            //container.RegisterInstance<IClipbordWatcher, ClipbordWatcher>(watcher);
+            
             //container.RegisterInitializer<IClipboard>(() => Clipboard.CreateReadWrite(watcher));
             //container.RegisterType<IClipboard, Clipboard>();
 

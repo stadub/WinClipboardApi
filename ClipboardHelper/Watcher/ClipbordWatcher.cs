@@ -74,6 +74,7 @@ namespace ClipboardHelper.Watcher
 
         public void StartListen(bool throwIfAnotherListenerStarted = false)
         {
+            if(watcherThread!=null)return;
             var startResult = new AsyncResult();
             if (proc != null) throw new ClipbordWatcherException("Cannot start second listener istance");
 
@@ -117,10 +118,10 @@ namespace ClipboardHelper.Watcher
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
                 UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
                 Arguments = CreateClassName()
             };
-            //procStartInfo.CreateNoWindow = true;
-
             proc = Process.Start(procStartInfo);
         }
 
@@ -258,7 +259,21 @@ namespace ClipboardHelper.Watcher
         #region Distructor
         public void Stop()
         {
-            Dispose();
+
+            if (timer != null) timer.Dispose();
+            if (watcherThread != null)
+            {
+                SendMessage(windowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                proc.Refresh();
+                if (!proc.HasExited)
+                {
+                    proc.WaitForExit(10);
+                    proc.Refresh();
+                    if (!proc.HasExited)
+                        proc.Kill();
+                }
+                watcherThread.Abort();
+            }
         }
 
         public void Dispose()
@@ -279,21 +294,7 @@ namespace ClipboardHelper.Watcher
             disposed = true;
             waitHandle.Set();
             waitHandle.Dispose();
-            if(timer!=null) timer.Dispose();
-            if (watcherThread != null)
-            {
-                SendMessage(windowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                proc.Refresh();
-                if (!proc.HasExited)
-                {
-                    proc.WaitForExit(10);
-                    proc.Refresh();
-                    if(!proc.HasExited)
-                        proc.Kill();
-                }
-                watcherThread.Abort();
-            }
-
+            Stop();
         }
         #endregion
         protected virtual string CreateClassName()

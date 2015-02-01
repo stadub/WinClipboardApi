@@ -26,24 +26,23 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ContentControl   Name="ViewContainer"/>
-        <ListView Grid.Row="0" Grid.Column="1" Name="LwAvailableFormats" ItemsSource="{Binding }">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-        <CheckBox Name="CbSubscribe" Grid.Column="1" Grid.Row="1" IsChecked="{Binding AutoUpdate}">Subscribe clipboard changes</CheckBox>
+        <Border Grid.Row="0" Grid.Column="1"  BorderBrush="Teal" BorderThickness="1" Padding="10" >
+            <DockPanel VerticalAlignment="Stretch">
+                <ListView Name="LwAvailableFormats" DockPanel.Dock="Top" ItemsSource="{Binding Providers}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <CheckBox VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Name="CbShowUnknown" IsChecked="{Binding ShowUnknownFormats}">Show unknown formats</CheckBox>
+            
+            </DockPanel>
+        </Border>
+        <CheckBox Margin="10" Name="CbSubscribe" Grid.Column="1" Grid.Row="1" IsChecked="{Binding AutoUpdate}">Subscribe clipboard changes</CheckBox>
         <Button Name="BtReload"  Grid.Row="1" Grid.Column="0" Margin="10" Width="150">Reload clipboard data
-            <Button.Visibility>
-                <Binding 
-                    Converter="{StaticResource VisibilityConverter  }" ConverterParameter="true" 
-                    Path="IsChecked"  ElementName="CbSubscribe"/>
-            </Button.Visibility>
-            <Button.Command>
-                <Binding>
-                    
-                </Binding>
+            <Button.Command >
+                <Binding Path="ReloadClipboardContent" />
             </Button.Command>
         </Button>
         <!--Visibility="{Binding Converter=BooleanToVisibilityConverter, Path=IsChecked, ElementName=CbSubscribe }"-->

@@ -2,7 +2,7 @@
 
 namespace ClipboardViewer.ViewModel
 {
-    class FormatProviderViewModel
+    public class FormatProviderViewModel
     {
         private readonly IClipbordFormatProvider provider;
 
@@ -33,7 +33,7 @@ namespace ClipboardViewer.ViewModel
         {
             get
             {
-                return string.Format("{{[Unknown]{0}:{1}}}", provider.Id, provider.FormatId);
+                return string.Format("[Unknown]{0}:{1}", provider.Id, provider.FormatId);
             }
         }
     }
