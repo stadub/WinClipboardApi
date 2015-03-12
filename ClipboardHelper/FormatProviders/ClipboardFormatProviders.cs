@@ -74,18 +74,26 @@ namespace ClipboardHelper.FormatProviders
             return Encoding.Unicode.GetString(data);
         }
     }
-    public abstract class StandartUnicodeTextProviderBase: DataFormatProvider
+
+    public abstract class StandartClipboardFormatBase : DataFormatProvider
     {
-        protected StandartUnicodeTextProviderBase()
-        {
-            Text = string.Empty;
-        }
-        private readonly StandardFormatIdWraper formatIdWraper;
-        private UnicodeStringSerializer provider;
-        public StandartUnicodeTextProviderBase(StandartClipboardFormats standartClipboardFormat)
+        protected StandardFormatIdWraper formatIdWraper;
+
+        public StandartClipboardFormatBase(StandartClipboardFormats standartClipboardFormat)
         {
             this.formatIdWraper = new StandardFormatIdWraper(standartClipboardFormat);
+        }
+    }
+
+    public abstract class StandartUnicodeTextProviderBase : StandartClipboardFormatBase
+    {
+
+        private UnicodeStringSerializer provider;
+        public StandartUnicodeTextProviderBase(StandartClipboardFormats standartClipboardFormat)
+            : base(standartClipboardFormat)
+        {
             provider = new UnicodeStringSerializer();
+            Text = string.Empty;
         }
         public override string FormatId
         {

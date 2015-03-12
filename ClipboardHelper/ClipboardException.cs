@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Serialization;
+using Utils;
 
 namespace ClipboardHelper
 {
@@ -53,6 +54,12 @@ namespace ClipboardHelper
 
         public ClipboardDataException(string message) : base(message) { }
         public ClipboardDataException(string message, Exception inner) : base(message, inner) { }
+
+        public static ClipboardDataException FromNative(string message)
+        {
+            var nativeExchption = ExceptionHelpers.GetLastWin32Exception();
+            return new ClipboardDataException(message,nativeExchption);
+        }
 
         protected ClipboardDataException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }

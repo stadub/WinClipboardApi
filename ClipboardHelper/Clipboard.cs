@@ -13,6 +13,7 @@ namespace ClipboardHelper
 {
     public interface IClipboard : IDisposable
     {
+
         void OpenReadOnly();
         void Open();
         void Clear();
@@ -30,9 +31,9 @@ namespace ClipboardHelper
     {
         private bool disposed;
 
-        private bool Owned;
+        private volatile bool Owned;
 
-        private IntPtr ClipboardOwner;
+        private volatile IntPtr ClipboardOwner;
 
         private readonly Dictionary<string, uint> registeredFormats = new Dictionary<string, uint>();
         private Dictionary<string, Func<IClipbordFormatProvider>> formatProviders= new Dictionary<string, Func<IClipbordFormatProvider>>();
@@ -243,7 +244,7 @@ namespace ClipboardHelper
         [DllImport("user32.dll")]
         public static extern uint EnumClipboardFormats(uint format);
 
-        [DllImport("user32.dll", ThrowOnUnmappableChar = true)]
+        [DllImport("user32.dll", ThrowOnUnmappableChar = true, CharSet = CharSet.Unicode)]
         private static extern int GetClipboardFormatName(uint format,
             [Out][MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpszFormatName, int cchMaxCount);
 
@@ -293,7 +294,14 @@ namespace ClipboardHelper
                     {
                         if (includeUnknown)
                         {
-                            foreach (var unknownformatId in unknownformatsIds)
+                            var standartFormats =unknownformatsIds.Where(x => Enum.IsDefined(typeof (StandartClipboardFormats), x))
+                                .ToList();
+
+                            foreach (var standartFormat in standartFormats)
+                            {
+                                yield return new NotImplementedStandartFormat((StandartClipboardFormats) standartFormat);
+                            }
+                            foreach (var unknownformatId in unknownformatsIds.Except(standartFormats))
                             {
                                 var formatNameBuilder = new StringBuilder(100);
                                 GetClipboardFormatName(unknownformatId, formatNameBuilder, 100);
@@ -302,8 +310,7 @@ namespace ClipboardHelper
                         }
                         yield break; 
                     }
-                    throw new ClipboardDataException("Error in retreiving avalible clipbord formats",
-                        ExceptionHelpers.GetLastWin32Exception());
+                    throw ClipboardDataException.FromNative("Error in retreiving avalible clipbord formats");
 
                 }
             }

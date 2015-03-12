@@ -23,6 +23,35 @@
         {
             Bytes = data;
         }
+    }
 
+    public class NotImplementedStandartFormat: StandartClipboardFormatBase
+    {
+        public NotImplementedStandartFormat(StandartClipboardFormats standartClipboardFormat)
+            : base(standartClipboardFormat)
+        {
+        }
+
+        public override string FormatId
+        {
+            get { return formatIdWraper.FormatName; }
+        }
+
+        public byte[] Bytes { get; set; }
+
+        public override byte[] Serialize()
+        {
+            return Bytes;
+        }
+
+        public override object Data
+        {
+            get {  return Bytes; }
+        }
+
+        protected override void DeserializeData(byte[] data)
+        {
+            Bytes = data;
+        }
     }
 }
