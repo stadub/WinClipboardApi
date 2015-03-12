@@ -1,14 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading;
 using Utils.ServiceLocatorInfo;
 
 namespace Utils
 {
+    [DebuggerDisplay(
+        "Id = {Id} [Inst:{registeredInstances.Count} Init:{registeredInitializers.Count} T:{registeredTypes.Count}]"
+        //+"{{Instances = {registeredInstances.Count} " //+
+        //"Initializers = {registeredInitializers.Count} " +
+        //"Types = {registeredTypes.Count}}}"
+        , Name = "ServiceLocator{Id}")]
     public class ServiceLocator:IDisposable
     {
+        public int Id { get; private set; }
+        private static int _curId;
+        public ServiceLocator()
+        {
+            Id = _curId;
+            Interlocked.Increment(ref _curId);
+        }
         protected Dictionary<KeyValuePair<Type, string>, object> registeredInstances = new Dictionary<KeyValuePair<Type, string>, object>();
         protected Dictionary<KeyValuePair<Type,string>, object> registeredInitializers = new Dictionary<KeyValuePair<Type, string>, object>();
 
