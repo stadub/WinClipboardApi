@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace Utils.Wpf.MvvmBase
 {
-    public class RelayCommand : ICommand
+    public class RelayCommand : IRelayCommand
     {
         private readonly Action execute;
         private readonly Func<bool> canExecute;
@@ -18,7 +18,7 @@ namespace Utils.Wpf.MvvmBase
             status = true;
         }
 
-        public bool CanExecute(object parameter)
+        public bool CanExecute()
         {
             var newStatus = canExecute();
             if (newStatus == status)
@@ -29,11 +29,26 @@ namespace Utils.Wpf.MvvmBase
             return newStatus;
         }
 
-        public void Execute(object parameter)
+        public void RefreshCanExecute()
         {
-            if (!CanExecute(parameter))
+            CanExecute();
+        }
+
+        public void Execute()
+        {
+            if (!CanExecute())
                 return;
             execute();
+        }
+
+        bool ICommand.CanExecute(object parameter)
+        {
+            return CanExecute();
+        }
+
+        void ICommand.Execute(object parameter)
+        {
+            Execute();
         }
 
         public event EventHandler CanExecuteChanged;
@@ -43,5 +58,12 @@ namespace Utils.Wpf.MvvmBase
             EventHandler handler = CanExecuteChanged;
             if (handler != null) handler(this, EventArgs.Empty);
         }
+    }
+
+    public interface IRelayCommand : ICommand
+    {
+        bool CanExecute();
+        void RefreshCanExecute();
+        void Execute();
     }
 }
