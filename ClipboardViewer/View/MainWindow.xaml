@@ -28,14 +28,14 @@
         <ContentControl   Name="ViewContainer"/>
         <Border Grid.Row="0" Grid.Column="1"  BorderBrush="Teal" BorderThickness="1" Padding="10" >
             <DockPanel VerticalAlignment="Stretch">
-                <ListView Name="LwAvailableFormats" DockPanel.Dock="Top" ItemsSource="{Binding Providers}" >
+                <ListView Name="LwAvailableFormats" DockPanel.Dock="Top" ItemsSource="{Binding Providers}"  SelectedItem="{Binding Provider}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Name}" />
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <CheckBox VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Name="CbShowUnknown" IsChecked="{Binding ShowUnknownFormats}">Show unknown formats</CheckBox>
+                <CheckBox VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Name="CbShowUnknown" IsChecked="{Binding LoadNotImplementedFormats}">Load unknown formats</CheckBox>
             
             </DockPanel>
         </Border>

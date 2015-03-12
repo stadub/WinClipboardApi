@@ -8,12 +8,16 @@
     <Application.Resources>
         <utils:ServiceLocator x:Key="ServiceLocator"/>
 
-        <ObjectDataProvider x:Key="Bootstraper" ObjectType="{x:Type clipboardViewer:Bootstraper}">
+        <ObjectDataProvider x:Key="Bootstraper" ObjectType="{x:Type clipboardViewer:Bootstraper}" IsAsynchronous="True">
             <ObjectDataProvider.ConstructorParameters>
                 <StaticResource ResourceKey="ServiceLocator" />
             </ObjectDataProvider.ConstructorParameters>
         </ObjectDataProvider>
 
+        <!--<ObjectDataProvider x:Key="Bootstraper.Container" ObjectInstance="{StaticResource Bootstraper}" MethodName="get_Container"/>-->
+        <!--<ObjectDataProvider x:Key="Bootstraper.Container" ObjectInstance="{StaticResource Bootstraper}" MethodName="GetLocator" />-->
+
+        
         <ObjectDataProvider x:Key="ViewModelLocator" ObjectType="{x:Type clipboardViewer:ViewModelLocator}">
             <ObjectDataProvider.ConstructorParameters>
                 <StaticResource ResourceKey="ServiceLocator" />

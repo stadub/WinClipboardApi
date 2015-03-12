@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ClipboardHelper;
@@ -21,7 +22,8 @@ namespace ClipboardViewer.ViewModel
         private bool autoUpdate;
         private ReadOnlyCollection<FormatProviderViewModel> providers;
         private IClipbordWatcher clipbordWatcher;
-        private bool showUnknownFormats;
+        private bool loadNotImplementedFormats;
+        private FormatProviderViewModel provider;
 
         public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats,TypeMapper mapper)
         {
@@ -68,29 +70,37 @@ namespace ClipboardViewer.ViewModel
                 if (value)
                     ClipbordWatcher.StartListen();
                 OnPropertyChanged();
-                ReloadClipboardContent.CanExecute(null);
+                ReloadClipboardContent.RefreshCanExecute();
             }
         }
 
-        public bool ShowUnknownFormats
+        public bool LoadNotImplementedFormats
         {
-            get { return showUnknownFormats; }
+            get { return loadNotImplementedFormats; }
             set
             {
-                if (showUnknownFormats == value) return;
-                showUnknownFormats = value;
+                if (loadNotImplementedFormats == value) return;
+                loadNotImplementedFormats = value;
+
+                if (ReloadClipboardContent.CanExecute())
+                    ReloadClipboardContent.Execute();
+
                 OnPropertyChanged();
             }
         }
 
-        public ICommand ReloadClipboardContent { get; set; }
+        public IRelayCommand ReloadClipboardContent { get; set; }
 
+        
         private IEnumerable<IClipbordFormatProvider> GetAvalibleFromats()
         {
-            clipboard.OpenReadOnly();
-            var formats = clipboard.GetAvalibleFromats(showUnknownFormats).ToList();
-            clipboard.Close();
-            return formats;
+            lock (clipboard)
+            {
+                clipboard.OpenReadOnly();
+                var formats = clipboard.GetAvalibleFromats(loadNotImplementedFormats).ToList();
+                clipboard.Close();
+                return formats;
+            }
         }
 
         public ReadOnlyCollection<FormatProviderViewModel> Providers
@@ -98,17 +108,26 @@ namespace ClipboardViewer.ViewModel
             get { return providers; }
         }
 
+
+        public FormatProviderViewModel Provider
+        {
+            get { return provider; }
+            set
+            {
+                if (provider == value) return;
+                provider = value;
+                OnPropertyChanged();
+            }
+        }
+
         private void UpdateFormats()
         {
             var porviderViewModels = new List<FormatProviderViewModel>();
-            foreach (var provider in GetAvalibleFromats())
+            var providerVmFactory = new FormatProviderViewModelFactory();
+            foreach (IClipbordFormatProvider provider in GetAvalibleFromats())
             {
-                FormatProviderViewModel providerVM;
-                if (provider is UnknownFormatProvider)
-                    providerVM = new UnknownFormatProviderViewModel((UnknownFormatProvider) provider);
-                else
-                    providerVM= new FormatProviderViewModel(provider);
-                porviderViewModels.Add(providerVM);
+                var providerVm = providerVmFactory.CreateProviderViewModel(provider);
+                porviderViewModels.Add(providerVm);
             }
             providers = new ReadOnlyCollection<FormatProviderViewModel>(porviderViewModels);
             base.OnPropertyChanged("Providers");

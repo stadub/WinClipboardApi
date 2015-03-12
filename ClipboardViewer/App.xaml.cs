@@ -25,15 +25,16 @@ namespace ClipboardViewer
             
             //container.RegisterInitializer<IClipboard>(() => Clipboard.CreateReadWrite(watcher));
             //container.RegisterType<IClipboard, Clipboard>();
-
+            var bootstraper = this.FindResource("Bootstraper");
+#if CheckInit
             container = (ServiceLocator)this.FindResource("ServiceLocator");
 
             Debug.Assert(container != null, "ServiceLocator doesn't exist in application resources");
-#if CheckInit
-            ObjectDataProvider vmLocatorObject = (ObjectDataProvider)this.FindResource("ViewModelLocator");
-            Debug.Assert(vmLocatorObject != null, "ViewModelLocator doesn't exist in application resources");
-            ViewModelLocator vmLocator = (ViewModelLocator)vmLocatorObject.ObjectInstance;
-            Debug.Assert(vmLocator != null, "vmLocatorObject has incorrect type");
+
+            CheckInitDataProvider("Bootstraper");
+            CheckInitDataProvider("Bootstraper.Container");
+            CheckInitDataProvider("ViewModelLocator");
+
 #endif
             if ((bool)(DesignerProperties.IsInDesignModeProperty.GetMetadata(typeof(DependencyObject)).DefaultValue))
             {
@@ -42,23 +43,22 @@ namespace ClipboardViewer
                
             }
 
-            ObjectDataProvider bootstraperObject = (ObjectDataProvider)this.FindResource("Bootstraper");
-            Debug.Assert(bootstraperObject != null, "Bootstraper doesn't exist in application resources");
-            Bootstraper bootstraper = (Bootstraper)bootstraperObject.ObjectInstance;
-            Debug.Assert(bootstraper != null, "Bootstraper has incorrect type");
-
             base.OnStartup(e);
 
         }
 
+        private object CheckInitDataProvider(string name)
+        {
+            ObjectDataProvider dObject = (ObjectDataProvider)this.FindResource(name);
+            Debug.Assert(dObject != null,  name + " is not found or incorrect format");
+            var objectInstance = dObject.ObjectInstance;
+            Debug.Assert(objectInstance != null,  name + " has incorrect type or null");
+            return objectInstance;
+        }
 
         private void RewriteOriginalByDesignMode(string name)
         {
-            ObjectDataProvider dObject = (ObjectDataProvider)this.FindResource("d:"+name);
-            Debug.Assert(dObject != null, "d:"+name +" is not found or incorrect format");
-            var objectInstance = dObject.ObjectInstance;
-            Debug.Assert(objectInstance != null, "d:"+name + "   has incorrect type or null");
-
+            var objectInstance=CheckInitDataProvider("d:" + name);
 
             ObjectDataProvider origObject = (ObjectDataProvider)this.FindResource(name);
             Debug.Assert(origObject != null, name + " is not found or incorrect format");
@@ -68,7 +68,8 @@ namespace ClipboardViewer
 
         protected override void OnExit(ExitEventArgs e)
         {
-            container.Dispose();
+            if (container!=null)
+                container.Dispose();
             base.OnExit(e);
         }
 
