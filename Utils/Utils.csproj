@@ -43,10 +43,11 @@
     <Compile Include="Enumerable.cs" />
     <Compile Include="ExceptionHelpers.cs" />
     <Compile Include="GenericEventArgs.cs" />
+    <Compile Include="ServiceLocatorInfo\LocatorTypeBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceLocator.cs" />
     <Compile Include="ServiceLocatorInfo\LocatorRegistrationInfo.cs" />
-    <Compile Include="ServiceLocatorInfo\TypeRegistrationInfo.cs" />
+    <Compile Include="TypeBuilder.cs" />
     <Compile Include="Strings.cs" />
     <Compile Include="TypeHelpers.cs" />
     <Compile Include="TypeMapper.cs" />

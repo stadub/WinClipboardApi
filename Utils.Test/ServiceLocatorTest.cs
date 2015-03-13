@@ -258,6 +258,21 @@ namespace Utils.Test
         }
 
         [TestMethod]
+        public void ShouldResolveSingetonForTestClassWNamedPropertyInjection()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWNamedPropertyInjection>();
+            locator.RegisterInstance<ITestClass, TestClassWDispose>(new TestClassWDispose(),"test");
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+            var instance = reslut as TestClassWNamedPropertyInjection;
+
+            Assert.IsTrue(instance.Prop is TestClassWDispose);
+        }
+
+        [TestMethod]
         public void ShouldResolveTestClassWPropertyValueInjection()
         {
             var locator = new ServiceLocator();

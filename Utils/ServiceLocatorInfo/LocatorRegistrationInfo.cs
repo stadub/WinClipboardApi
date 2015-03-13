@@ -7,12 +7,12 @@ namespace Utils.ServiceLocatorInfo
 {
     public class LocatorRegistrationInfo<TClass>
     {
-        private readonly TypeRegistrationInfo type;
+        private readonly TypeBuilder type;
         public Type InterfaceType { get; private set; }
         public Type ClassType { get; private set; }
 
 
-        internal LocatorRegistrationInfo(TypeRegistrationInfo type)
+        internal LocatorRegistrationInfo(TypeBuilder type)
         {
             this.type = type;
         }
