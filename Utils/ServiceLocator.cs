@@ -23,9 +23,9 @@ namespace Utils
             Id = _curId;
             Interlocked.Increment(ref _curId);
         }
+        //may be in future type key should changed from <Type, Name> to <TypeName, Name> to reduce memory usage
         protected Dictionary<KeyValuePair<Type, string>, object> registeredInstances = new Dictionary<KeyValuePair<Type, string>, object>();
         protected Dictionary<KeyValuePair<Type,string>, object> registeredInitializers = new Dictionary<KeyValuePair<Type, string>, object>();
-
         private Dictionary<KeyValuePair<Type, string>, TypeBuilder> registeredTypes = new Dictionary<KeyValuePair<Type, string>, TypeBuilder>();
 
         #region Register methods
@@ -45,7 +45,7 @@ namespace Utils
             var key = GetKey(interfaceType, name);
             CheckDuplicated(key);
 
-            var registrationInfo = new LocatorTypeBuilder(this,classType, name);
+            var registrationInfo = new LocatorTypeBuilder(this,classType);
             registeredTypes.Add(key,registrationInfo);
             return new LocatorRegistrationInfo<TClass>(registrationInfo);
         }
@@ -195,13 +195,21 @@ namespace Utils
         protected virtual bool TryConstructType(Type type, string name, out object value)
         {
             var key = GetKey(type, name);
+            TypeBuilder registration;
             if (!registeredTypes.ContainsKey(key))
             {
+#if RESOLVE_NON_REGISTERED
+                registration= new LocatorTypeBuilder(this,type,name);
+#else
                 value = TypeHelpers.GetDefault(@type);
                 return false;
+#endif
             }
-
-            var registration = registeredTypes[key];
+            else
+            {
+                registration = registeredTypes[key];
+            }
+            
             if (registration == null) throw new TypeNotResolvedException(type,"Cannot find type registration");
 
             var ctor = registration.TryGetConstructor();

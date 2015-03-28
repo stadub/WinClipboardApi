@@ -54,6 +54,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringsTest.cs" />
     <Compile Include="ServiceLocatorTest.cs" />
+    <Compile Include="TypeMapperRegistryTest.cs" />
     <Compile Include="TypeMapperTest.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -5,12 +5,22 @@ using System.Reflection;
 
 namespace Utils.ServiceLocatorInfo
 {
-    public class LocatorRegistrationInfo<TClass>
+    public interface IPropertyRegistrationInfo<TClass>
+    {
+        void InjectPropertyValue<TProp>(Expression<Func<TClass, TProp>> expression, TProp value);
+        void IgnoreProperty<TProp>(Expression<Func<TClass, TProp>> expression);
+    }
+
+
+    public interface ILocatorRegistrationInfo<TClass> : IPropertyRegistrationInfo<TClass>
+    {
+        void InjectProperty<TProp>(Expression<Func<TClass, TProp>> expression);
+        void InjectNamedProperty<TProp>(Expression<Func<TClass, TProp>> expression,string reristeredName);
+    }
+
+    public class LocatorRegistrationInfo<TClass> : ILocatorRegistrationInfo<TClass>
     {
         private readonly TypeBuilder type;
-        public Type InterfaceType { get; private set; }
-        public Type ClassType { get; private set; }
-
 
         internal LocatorRegistrationInfo(TypeBuilder type)
         {
@@ -39,6 +49,12 @@ namespace Utils.ServiceLocatorInfo
         {
             var propInfo = GetPropertyInfo(expression);
             type.PropertyInjections.Add(new KeyValuePair<string, PropertyInfo>(reristeredName, propInfo));
+        }
+
+        public void IgnoreProperty<TProp>(Expression<Func<TClass, TProp>> expression)
+        {
+            var propInfo = GetPropertyInfo(expression);
+            type.IgnoreProperties.Add(propInfo);
         }
 
         private static PropertyInfo GetPropertyInfo(Expression expression)

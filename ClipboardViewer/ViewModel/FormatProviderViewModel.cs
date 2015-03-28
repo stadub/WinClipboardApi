@@ -25,6 +25,7 @@ namespace ClipboardViewer.ViewModel
         NotImplemented
 
     }
+
     public class FormatProviderViewModel
     {
         private readonly IClipbordFormatProvider provider;

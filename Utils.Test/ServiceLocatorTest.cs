@@ -71,13 +71,13 @@ namespace Utils.Test
 
     class TestClassWPropertyInjection : ITestClass
     {
-        [InjectInstanceAttribute()]
+        [InjectInstance()]
         public IList<int> Prop{get;set;}
     }
 
     class TestClassWNamedPropertyInjection : ITestClass
     {
-        [InjectInstanceAttribute("test")]
+        [InjectInstance("test")]
         public ITestClass Prop { get; set; }
     }
 
@@ -337,7 +337,7 @@ namespace Utils.Test
             Assert.IsNotNull(reslut);
             var instance = reslut as TestClassWProperty;
 
-            ReferenceEquals(instance.Prop, list);
+            Assert.IsTrue(ReferenceEquals(instance.Prop, list));
         }
 
         [TestMethod]

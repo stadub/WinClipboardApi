@@ -51,6 +51,7 @@
     <Compile Include="Strings.cs" />
     <Compile Include="TypeHelpers.cs" />
     <Compile Include="TypeMapper.cs" />
+    <Compile Include="TypeMapperRegistry.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

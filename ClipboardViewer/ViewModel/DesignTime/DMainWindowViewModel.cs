@@ -12,15 +12,15 @@ namespace ClipboardViewer.ViewModel.DesignTime
 {
     public class DMainWindowViewModel : ViewModelBase
     {
-        private readonly TypeMapper mapper;
         private readonly IClipboard clipboard;
         private readonly Func<IClipbordFormatProvider>[] clipboardFormats;
         private bool autoUpdate;
+        private ReadOnlyCollection<FormatProviderViewModel> providers;
 
-        public DMainWindowViewModel(TypeMapper mapper)
+        public DMainWindowViewModel()
         {
-            this.mapper = mapper;
             ReloadClipboardContent = new RelayCommand(UpdateFormats);
+            UpdateFormats();
         }
 
         public bool AutoUpdate
@@ -36,11 +36,32 @@ namespace ClipboardViewer.ViewModel.DesignTime
 
         public ICommand ReloadClipboardContent { get; set; }
 
-        //public ReadOnlyObservableCollection<KeyValuePair<string,string>> 
+        public ReadOnlyCollection<FormatProviderViewModel> Providers
+        {
+            get { return providers; }
+        }
+
+        private static IEnumerable<IClipbordFormatProvider> AllProviders()
+        {
+            yield return new FileDropProvider();
+            yield return new UnicodeFileNameProvider();
+            yield return new HtmlFormatProvider();
+            yield return new SkypeFormatProvider();
+            yield return new UnicodeTextProvider();
+        }
 
         private void UpdateFormats()
         {
-            
+            var porviderViewModels= new List<FormatProviderViewModel>();
+            foreach (var provider in AllProviders())
+            {
+                porviderViewModels.Add(new FormatProviderViewModel(provider, FromatProviderType.Default));
+            }
+            porviderViewModels.Add(new FormatProviderViewModel(new UnknownFormatProvider(1, "someFormat"),FromatProviderType.Unknown));
+            porviderViewModels.Add(new FormatProviderViewModel(new UnknownFormatProvider(1, "someFormat"),FromatProviderType.NotImplemented));
+
+            providers = new ReadOnlyCollection<FormatProviderViewModel>(porviderViewModels);
+            base.OnPropertyChanged("Providers");
         }
 
     }

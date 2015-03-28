@@ -1,55 +1,147 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
+using Utils.ServiceLocatorInfo;
 
 namespace Utils
 {
-    public class TypeMapper
+    public interface ITypeMapper
     {
-        public TResult MapTo<TResult>(object source)
+        object Map(object source);
+        Type DestType { get; }
+        Type SourceType { get; }
+    }
+
+
+    public class TypeMapper<TSource,TDest> : ITypeMapper
+    {
+        private readonly TypeBuilder baseBuilder;
+        private readonly TypeBuilder mappingInfoStub;
+
+        public TypeMapper():this(new TypeBuilderStub(typeof(TDest)))
         {
-            var sourceType = source.GetType();
-            var sourceProps=GetPublicNotIndexedProperties(sourceType);
+        }
 
-            var destType = typeof(TResult);
-            var destProps = GetPublicNotIndexedProperties(destType).ToLookup(info => info.Name);
+        public TypeMapper(TypeBuilder baseBuilder)
+        {
+            this.baseBuilder = baseBuilder;
+            DestType = typeof(TDest);
 
-            if(sourceType.IsGenericType || destType.IsGenericType)
-                throw new TypeNotSupportedException(sourceType, "Generic types are not supported");
+            mappingInfoStub = new TypeBuilderStub(DestType);
+            MappingInfo = new LocatorRegistrationInfo<TDest>(mappingInfoStub);
+            SourceType = typeof(TSource);
+        }
 
-            var ctor = destType.GetConstructors();
-            if(ctor.Length != 1 )
-                throw new TypeNotSupportedException(sourceType, "Only default constructor is supported");
+        public TypeMapper(ServiceLocator locator): this(new LocatorTypeBuilder(locator, typeof(TDest)))
+        {
+            LocatorMappingInfo = new LocatorRegistrationInfo<TDest>(baseBuilder);
+        }
 
-            var destObject=Activator.CreateInstance<TResult>();
+        public IPropertyRegistrationInfo<TDest> MappingInfo { get; private set; }
+        public ILocatorRegistrationInfo<TDest> LocatorMappingInfo { get; private set; }
 
-            foreach (var propertyInfo in sourceProps)
+        public TDest Map(object source)
+        {
+            if (DestType.IsGenericType || DestType.IsGenericType)
+                throw new TypeNotSupportedException(DestType, "Generic types are not supported");
+
+            var mapper = new MappingTypeBuilder(source, DestType, baseBuilder);
+
+            mapper.PropertyValueResolvers.AddRange(mappingInfoStub.PropertyValueResolvers);
+            mapper.IgnoreProperties.AddRange(mappingInfoStub.IgnoreProperties);
+
+            var ctor = mapper.GetConstructor();
+
+            var destObject = mapper.CreateInstance(ctor, DestType);
+            mapper.InjectTypeProperties(destObject);
+
+            return (TDest) destObject;
+        }
+
+        public Type DestType { get; private set; }
+
+        public Type SourceType { get; private set; }
+
+        object ITypeMapper.Map(object source)
+        {
+            return Map(source);
+        }
+    }
+
+    public class MappingTypeBuilder : TypeBuilderProxy
+    {
+        private readonly object source;
+        private readonly Type sourceType;
+
+
+        public MappingTypeBuilder(object source, Type destType): this(source,destType,new TypeBuilderStub(destType) )
+        {
+        }
+
+        public MappingTypeBuilder(object source, Type destType, TypeBuilder baseBuilder): base(destType, baseBuilder)
+        {
+            this.source = source;
+            this.sourceType = source.GetType();
+        }
+
+        public virtual PropertyInfo TryFindAppropriateProperty(Type type, string name)
+        {
+            foreach (var sourceProperty in sourceType.GetProperties(BindingFlags.Public|BindingFlags.Instance))
             {
-                if(destProps.Contains(propertyInfo.Name))
-                {
-                    var destProp = destProps[propertyInfo.Name].Single();
-
-                    var sourceValue = propertyInfo.GetValue(source);
-                    if (propertyInfo.PropertyType != destProp.PropertyType)
-                    {
-                        var convertedValue = Convert.ChangeType(sourceValue, destProp.PropertyType);
-                        destProp.SetValue(destObject, convertedValue);
-                    }
-                    else
-                        destProp.SetValue(destObject, sourceValue);
-                }
+                if (!sourceProperty.CanRead)
+                    continue;
+                if (sourceProperty.Name == name)
+                    return sourceProperty;
             }
-            return destObject;
+            return null;
         }
 
-        private IEnumerable<PropertyInfo> GetPublicNotIndexedProperties(Type type)
+        public virtual bool TryMapProperty(string name, Type type, out object value)
         {
-            //work only with public Not special and not Index properties
-            IEnumerable<PropertyInfo> props = type
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => !x.IsSpecialName && x.GetIndexParameters().Length == 0);
-            return props;
+            value = null;
+            var prop = TryFindAppropriateProperty(type, name);
+            if (prop == null)
+                return false;
+
+            var sourcePropValue = prop.GetValue(source);
+            if (prop.PropertyType != type)
+            {
+                if (sourcePropValue == null)
+                    return true;
+
+                try
+                {
+                    var convertedValue = Convert.ChangeType(sourcePropValue, type);
+                    value = convertedValue;
+                    return true;
+                }
+                catch (InvalidCastException) { }
+                catch (FormatException) { }
+                catch (OverflowException)
+                {
+                }
+                return false;
+            }
+            value = sourcePropValue;
+            return true;
         }
+
+
+        protected override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyInfo, out object value)
+        {
+            return TryMapProperty(propertyInfo.Name, propertyInfo.PropertyType, out value) ||
+                base.ResolvePublicNotIndexedProperty(propertyInfo, out value);
+        }
+
+        protected override bool ResolveParameter(ParameterInfo paramInfo, out object value)
+        {
+            if (paramInfo.ParameterType == sourceType)
+            {
+                value = source;
+                return true;
+            }
+            return TryMapProperty(paramInfo.Name, paramInfo.ParameterType, out value) ||
+                base.ResolveParameter(paramInfo, out value);
+        }
+
     }
 }

@@ -17,7 +17,7 @@ namespace ClipboardViewer.ViewModel
     public class MainWindowViewModel : ViewModelBase,IDisposable
     {
         private readonly IClipboard clipboard;
-        private readonly TypeMapper mapper;
+
         private readonly Func<IClipbordFormatProvider>[] clipboardFormats;
         private bool autoUpdate;
         private ReadOnlyCollection<FormatProviderViewModel> providers;
@@ -25,11 +25,10 @@ namespace ClipboardViewer.ViewModel
         private bool loadNotImplementedFormats;
         private FormatProviderViewModel provider;
 
-        public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats,TypeMapper mapper)
+        public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats)
         {
             this.clipboard = clipboard;
 
-            this.mapper = mapper;
             this.clipboardFormats = accessibleFromats as Func<IClipbordFormatProvider>[] ?? accessibleFromats.ToArray();
             clipboardFormats.ForEach(clipboard.RegisterFormatProvider);
 

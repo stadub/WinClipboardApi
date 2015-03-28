@@ -6,7 +6,6 @@ namespace ClipboardViewer.ViewModel.DesignTime
     {
         public DBootstraper(ServiceLocator container)
         {
-            container.RegisterInstance<TypeMapper, TypeMapper>(new TypeMapper());
         }
     }
 }

@@ -1,25 +1,167 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Utils.Test
 {
     [TestClass]
     public class TypeMapperTest
     {
-        class A
+        #region TestClasses
+        class ClassW2Properties
         {
-             public bool a { get; set; }
+             public int Prop { get; set; }
+             public int Prop2 { get; set; }
         }
-        class B
+        class ClassW4Properties
         {
-            public bool a { get; set; }
+            public int Prop { get; set; }
+            public int Prop2 { get; set; }
+            public int Prop3 { get; set; }
+            public ITestClass Prop4 { get; set; }
         }
+
+        class ClassWithSourceCtor
+        {
+            public ClassWithSourceCtor(ClassW2Properties source)
+            {
+                this.Source = source;
+            }
+            public ClassW2Properties Source { get; set; }
+        }
+
+
+        interface ITestClass { }
+
+        class TestClassWProperty : ITestClass
+        {
+            public IList<int> Prop { get; set; }
+        }
+
+        class TestTypeBuilder : TypeBuilderStub
+        {
+            public PropertyInfo PropertyToResolve { get; set; }
+            public object ProertyValue { get; set; }
+            public TestTypeBuilder(Type destType)
+                : base(destType)
+            {
+            }
+
+            protected override bool ResolvePublicNotIndexedProperty(PropertyInfo property, out object value)
+            {
+                if (property == PropertyToResolve)
+                {
+                    value = ProertyValue;
+                    return true;
+                }
+                return base.ResolvePublicNotIndexedProperty(property, out value);
+            }
+        }
+
+        #endregion TestClasses
+
         [TestMethod]
-        public void ShouldMapType()
+        public void ShouldMapIdenticallyNamedTypeProperties()
         {
-            var mapper = new TypeMapper();
-            var b=mapper.MapTo<B>(new A {a = true});
-            Assert.IsNotNull(b);
-            Assert.IsTrue(b.a==true);
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
+            var dest = mapper.Map(new ClassW2Properties { Prop = 1,Prop2 = 2});
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop == 1);
+            Assert.IsTrue(dest.Prop2 == 2);
+        }
+
+        [TestMethod]
+        public void ShouldMapSourceTypeToDestConstructor()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassWithSourceCtor>();
+            var source = new ClassW2Properties();
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Source == source);
+        }
+
+
+        [TestMethod]
+        public void ShouldInjectPropertyValue()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
+            mapper.MappingInfo.InjectPropertyValue(cl => cl.Prop3,3);
+            var source = new ClassW2Properties();
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop3 == 3);
+        }
+
+        [TestMethod]
+        public void ShouldIgnoreProperty()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
+
+            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
+            var source = new ClassW2Properties{ Prop = 1,Prop2 = 2};
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop == 0);
+            Assert.IsTrue(dest.Prop2 == 2);
+        }
+
+        [TestMethod]
+        public void ShouldResolvePropertySetByBaseResolver()
+        {
+            var destType = typeof (ClassW4Properties);
+            var testBuilder = new TestTypeBuilder(destType);
+            testBuilder.PropertyToResolve = destType.GetProperty("Prop3");
+            testBuilder.ProertyValue = 3;
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(testBuilder);
+
+            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
+            var source = new ClassW2Properties();
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop3 == 3);
+        }
+
+        [TestMethod]
+        public void ShouldUserTopLevelBuilder()
+        {
+            var destType = typeof(ClassW4Properties);
+            var testBuilder = new TestTypeBuilder(destType);
+            testBuilder.PropertyToResolve = destType.GetProperty("Prop2");
+            testBuilder.ProertyValue = 3;
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(testBuilder);
+            var source = new ClassW2Properties { Prop2 = 2 };
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop2 == 2);
+        }
+
+        [TestMethod]
+        public void ShouldResolvePropertiesByServiceLocator()
+        {
+            var locator = new ServiceLocator();
+            locator
+                .RegisterType<ITestClass, TestClassWProperty>()
+                .InjectProperty(classWProp => classWProp.Prop);
+
+            var list = new List<int>();
+            locator.RegisterInstance<IList<int>, List<int>>(list);
+
+            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(locator);
+
+            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
+            mapper.LocatorMappingInfo.InjectProperty(properties => properties.Prop4);
+
+            var source = new ClassW2Properties { Prop2 = 2 };
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop2 == 2);
+
+
+            Assert.IsNotNull(dest.Prop4);
+            var instance = dest.Prop4 as TestClassWProperty;
+
+            Assert.IsTrue(ReferenceEquals(instance.Prop, list));
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Utils
@@ -6,9 +7,8 @@ namespace Utils
     class LocatorTypeBuilder : TypeBuilder
     {
         private readonly ServiceLocator serviceLocator;
-
-        public LocatorTypeBuilder(ServiceLocator serviceLocator, Type destType, string registrationNam)
-            : base(destType, registrationNam)
+        public LocatorTypeBuilder(ServiceLocator serviceLocator, Type destType)
+            : base(destType)
         {
             this.serviceLocator = serviceLocator;
         }
@@ -22,25 +22,37 @@ namespace Utils
             return serviceLocator.TryResolve(parametrType, name, out value);
         }
 
-        protected override object ResolvePropertyInjection(Type propertyType, string name)
+        //executed only when PropertyInjectionResolvers compilation option is defined
+        protected override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
         {
-            object value;
-            serviceLocator.TryResolve(propertyType, name, out value);
-            return value;
+            throw new NotImplementedException();
         }
 
-        protected override object ResolvePropertyValueInjection(Type propertyType, string name)
+        protected override bool ResolvePropertyInjection(Type propertyType, string name, out object value)
         {
-            object value;
-            serviceLocator.TryResolve(propertyType, name, out value);
-            return value;
+            return serviceLocator.TryResolve(propertyType, name, out value);
         }
 
-        protected override object ResolvePropertyNamedInstance(Type propertyType, string name)
+        protected override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
         {
-            object value;
-            serviceLocator.TryResolve(propertyType, name, out value);
-            return value;
+            return serviceLocator.TryResolve(propertyType, name, out value);
+        }
+
+        protected override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
+        {
+            return serviceLocator.TryResolve(propertyType, name, out value);
+        }
+
+
+        protected override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
+        {
+            value = null;
+            return false;
+        }
+
+        protected override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(List<PropertyInfo> resolvedProperties)
+        {
+            return new Dictionary<PropertyInfo, object>();
         }
     }
 }

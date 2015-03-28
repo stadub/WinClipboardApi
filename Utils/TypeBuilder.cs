@@ -5,22 +5,23 @@ using System.Reflection;
 
 namespace Utils
 {
-    public abstract class TypeBuilder
+    public abstract class TypeBuilder 
     {
-        protected TypeBuilder(Type destType, string registrationName)
+        protected TypeBuilder(Type destType)
         {
             PropertyInjectionResolvers = new List<KeyValuePair<PropertyInfo, Type>>();
             PropertyValueResolvers = new List<KeyValuePair<PropertyInfo, object>>();
             PropertyInjections = new List<KeyValuePair<string, PropertyInfo>>();
             DestType = destType;
-            RegistrationName = registrationName;
+            IgnoreProperties= new List<PropertyInfo>();
         }
 
         public List<KeyValuePair<string, PropertyInfo>> PropertyInjections { get; private set; }
         public Type DestType { get; private set; }
-        public string RegistrationName { get; private set; }
-        public List<KeyValuePair<PropertyInfo,Type>> PropertyInjectionResolvers { get; set; }
-        public List<KeyValuePair<PropertyInfo,object>> PropertyValueResolvers { get; set; }
+
+        public List<KeyValuePair<PropertyInfo,Type>> PropertyInjectionResolvers { get; private set; }
+        public List<KeyValuePair<PropertyInfo,object>> PropertyValueResolvers { get; private set; }
+        public List<PropertyInfo> IgnoreProperties { get; private set; }
 
 
         public ConstructorInfo TryGetConstructor()
@@ -139,9 +140,39 @@ namespace Utils
             return field.AttributeType.IsAssignableFrom(typeof(InjectInstanceAttribute));
         }
 
+        protected static IEnumerable<PropertyInfo> GetPublicNotIndexedProperties(Type type)
+        {
+            //work only with public Not special and not Index properties
+            IEnumerable<PropertyInfo> props = type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => !x.IsSpecialName && x.GetIndexParameters().Length == 0);
+            return props;
+        }
+
+        /// <summary>
+        /// Resolves type properties by invoking for type peoperties methods sequence:
+        /// 1) In case when <see cref="Utils"/> compilled with defined derectied "PropertyInjectionResolvers" 
+        /// resolve properties listed in <see cref="PropertyInjectionResolvers"/> collection
+        /// by invoking <see cref="ResolvePropertyInjectionByResolver"/> for each of them
+        /// 2)Invking <see cref="ResolvePropertyInjection"/> for each property from <see cref="PropertyInjections"/> list.
+        /// 3)Resolve value for properties marked with <see cref="InjectValueAttribute"/>
+        /// ether by setting value defined in attribute or <see cref="ResolvePropertyValueInjection"/> method invocation.
+        /// 4)Inject value for properties marked with <see cref="InjectInstanceAttribute"/>
+        /// via <see cref="ResolvePropertyNamedInstance"/> method invocation.
+        /// 5)<see cref="ResolvePublicNotIndexedProperty"/> method invoked for all public properties with no index that wherent resolved in previouse steps.
+        /// 6)Execute <see cref="ResolvePropertiesCustom"/> with passing allready resolved properties list as argument
+        /// </summary>
+        /// <remarks>All the properties that marked as Ignored by adding to <see cref="IgnoreProperties"/> list will be ignored.</remarks>
+        /// <param name="instance"></param>
         public void InjectTypeProperties(object instance)
         {
             var resolvedProperties = new List<PropertyInfo>();
+            InjectTypeProperties(instance,resolvedProperties);
+        }
+
+        internal virtual void InjectTypeProperties(object instance,List<PropertyInfo> resolvedProperties)
+        {
+            IgnoreProperties.ForEach(resolvedProperties.Add);
             //Inject registered properties values
             foreach (var prop in PropertyValueResolvers)
             {
@@ -151,12 +182,14 @@ namespace Utils
 
 #if PropertyInjectionResolvers
             //Inject registered property injectction resolvers
-            foreach (var prop in type.PropertyInjectionResolvers)
+            foreach (var prop in PropertyInjectionResolvers)
             {
                 if(resolvedProperties.Contains(prop.Key))
                     continue;
-                var propValue = Resolve(prop.Value, string.Empty);
-                prop.Key.SetValue(instance, propValue);
+                object propValue;
+                var result = ResolvePropertyInjectionByResolver(prop.Value, string.Empty, out propValue);
+                if(result)
+                    prop.Key.SetValue(instance, propValue);
                 resolvedProperties.Add(prop.Key);
             }
 #endif
@@ -166,9 +199,12 @@ namespace Utils
                 var propertyType = prop.Value;
                 if (resolvedProperties.Contains(propertyType))
                     continue;
-                var propValue = ResolvePropertyInjection(propertyType.PropertyType, prop.Key);
-                propertyType.SetValue(instance, propValue);
-                resolvedProperties.Add(propertyType);
+                Object propValue;
+                if (ResolvePropertyInjection(propertyType.PropertyType, prop.Key, out propValue))
+                {
+                    propertyType.SetValue(instance, propValue);
+                    resolvedProperties.Add(propertyType);
+                }
             }
 
             //resolving injection properties, that doesn't registered in the "PropertyInjections"
@@ -187,13 +223,18 @@ namespace Utils
                     }
                     else
                         prop.SetValue(instance, inject.Value);
+                    resolvedProperties.Add(prop);
                 }
                 else
                 {
-                    var propValue = ResolvePropertyValueInjection(prop.PropertyType, string.Empty);
-                    prop.SetValue(instance, propValue);
+                    Object propValue;
+                    if (ResolvePropertyValueInjection(prop.PropertyType, string.Empty, out propValue))
+                    {
+                        prop.SetValue(instance, propValue);
+                        resolvedProperties.Add(prop);
+                    }
                 }
-                resolvedProperties.Add(prop);
+                
             }
 
             var propsToInject = DestType.GetProperties()
@@ -201,13 +242,108 @@ namespace Utils
             foreach (var prop in propsToInject)
             {
                 var injectType = prop.GetCustomAttribute<InjectInstanceAttribute>();
-                var propValue = ResolvePropertyNamedInstance(prop.PropertyType, injectType.Name);
-                prop.SetValue(instance, propValue);
+                Object propValue;
+                if (ResolvePropertyNamedInstance(prop.PropertyType, injectType.Name, out propValue))
+                {
+                    prop.SetValue(instance, propValue);
+                    resolvedProperties.Add(prop);
+                }
+            }
+            var publicNotIndexedProperties = GetPublicNotIndexedProperties(DestType).Except(resolvedProperties);
+
+            foreach (PropertyInfo publicNotIndexedProperty in publicNotIndexedProperties)
+            {
+                object value;
+                if (ResolvePublicNotIndexedProperty(publicNotIndexedProperty, out value))
+                {
+                    publicNotIndexedProperty.SetValue(instance, value);
+                    resolvedProperties.Add(publicNotIndexedProperty);
+                }
+            }
+            var customResolverValues = ResolvePropertiesCustom(resolvedProperties);
+            foreach (var customResolverValue in customResolverValues)
+            {
+                customResolverValue.Key.SetValue(instance, customResolverValue.Value);
             }
         }
 
-        protected abstract object ResolvePropertyInjection(Type propertyType, string value);
-        protected abstract object ResolvePropertyValueInjection(Type propertyType, string value);
-        protected abstract object ResolvePropertyNamedInstance(Type propertyType, string value);
+        protected abstract bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value);
+
+        protected abstract bool ResolvePropertyInjection(Type propertyType, string name, out object value);
+        protected abstract bool ResolvePropertyValueInjection(Type propertyType, string name, out object value);
+        protected abstract bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value);
+
+        protected abstract bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value);
+
+        protected abstract Dictionary<PropertyInfo, object> ResolvePropertiesCustom(List<PropertyInfo> resolvedProperties);
+
+
     }
+
+    public class TypeBuilderStub : TypeBuilder
+    {
+        public TypeBuilderStub(Type destType) : base(destType)
+        {
+        }
+
+        private static bool NotResolved(out object value)
+        {
+            value = null;
+            return false;
+        }
+
+        protected override bool ResolveParameter(ParameterInfo paramInfo, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override bool ResolvePropertyInjection(Type propertyType, string name, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
+        {
+            return NotResolved(out value);
+        }
+
+        protected override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(List<PropertyInfo> resolvedProperties)
+        {
+            return new Dictionary<PropertyInfo, object>();
+        }
+    }
+
+    public class TypeBuilderProxy : TypeBuilderStub
+    {
+        private readonly TypeBuilder baseBuilder;
+
+
+        public TypeBuilderProxy(Type destType, TypeBuilder baseBuilder) : base(destType)
+        {
+            this.baseBuilder = baseBuilder;
+        }
+
+        internal override void InjectTypeProperties(object instance, List<PropertyInfo> resolvedProperties)
+        {
+            base.InjectTypeProperties(instance, resolvedProperties);
+            baseBuilder.InjectTypeProperties(instance, resolvedProperties);
+        }
+
+    }
+
 }
