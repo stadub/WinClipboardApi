@@ -32,11 +32,36 @@ namespace Utils.Test
         }
 
 
+        class ClassWithSourceProp
+        {
+            public ClassWithSourceProp(int prop2)
+            {
+                this.Prop2 = prop2;
+            }
+
+            public int Prop2 { get; private set; }
+        }
+
+
         interface ITestClass { }
 
         class TestClassWProperty : ITestClass
         {
             public IList<int> Prop { get; set; }
+        }
+
+        class ClassWSourcePropertyMapAttribute
+        {
+            [SourceProperty(Name="Prop2")]
+            public int Prop { get; set; }
+            public int Prop2 { get; set; }
+        } 
+        
+        class ClassWSourcePropertyPathAttribute
+        {
+            [SourceProperty(Path = "Source.Prop2")]
+            public int Prop { get; set; }
+            public int Prop2 { get; set; }
         }
 
         class TestTypeBuilder : TypeBuilderStub
@@ -68,6 +93,16 @@ namespace Utils.Test
             var dest = mapper.Map(new ClassW2Properties { Prop = 1,Prop2 = 2});
             Assert.IsNotNull(dest);
             Assert.IsTrue(dest.Prop == 1);
+            Assert.IsTrue(dest.Prop2 == 2);
+        }
+
+        
+        [TestMethod]
+        public void ShouldMapCtorProperty()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassWithSourceProp>();
+            var dest = mapper.Map(new ClassW2Properties { Prop = 1, Prop2 = 2 });
+            Assert.IsNotNull(dest);
             Assert.IsTrue(dest.Prop2 == 2);
         }
 
@@ -162,6 +197,27 @@ namespace Utils.Test
             var instance = dest.Prop4 as TestClassWProperty;
 
             Assert.IsTrue(ReferenceEquals(instance.Prop, list));
+        }
+
+        [TestMethod]
+        public void ShouldResolveCorrectPropertyWithSourcePropertyAttribute()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassWSourcePropertyMapAttribute>();
+            var source = new ClassW2Properties {Prop = 1, Prop2 = 2};
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop == 2);
+            Assert.IsTrue(dest.Prop2 == 2);
+        }
+
+        [TestMethod]
+        public void ShouldResolvePropertyPathForPropertyWAttribute()
+        {
+            var mapper = new TypeMapper<ClassWithSourceCtor, ClassWSourcePropertyPathAttribute>();
+            var source = new ClassWithSourceCtor(new ClassW2Properties {Prop = 1, Prop2 = 2});
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsTrue(dest.Prop == 2);
         }
     }
 }

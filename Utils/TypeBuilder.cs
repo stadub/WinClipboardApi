@@ -54,7 +54,7 @@ namespace Utils
             var ctor = TryGetConstructor();
             if (ctor!=null)
                 return ctor;
-            throw new ConstructorNotResolvedException(DestType);
+            throw new ConstructorNotResolvedException(DestType.FullName);
         }
 
         public object CreateInstance(ConstructorInfo ctor, Type sourceType)
@@ -71,7 +71,7 @@ namespace Utils
                 var parametrType = paramDef.ParameterType;
                 if (paramDef.IsOut || parametrType.IsByRef)
                 {
-                    throw new TypeNotSupportedException(sourceType, "Constructors with Out and Ref Attributes are not supported");
+                    throw new TypeNotSupportedException(sourceType.FullName, "Constructors with Out and Ref Attributes are not supported");
                 }
 
                 object paramValue = null;
@@ -91,7 +91,7 @@ namespace Utils
                     paramValueInjected = ResolveParameter(paramDef, out paramValue);
                 }
                 if (!paramValueInjected)
-                    throw new TypeInitalationException(DestType, string.Format("Property {0} doesn't resolved", paramDef.Name));
+                    throw new TypeInitalationException(DestType.FullName, string.Format("Property {0} doesn't resolved", paramDef.Name));
                 paramValues.Add(paramValue);
             }
             return ctor.Invoke(paramValues.ToArray());

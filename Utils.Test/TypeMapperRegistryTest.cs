@@ -113,7 +113,7 @@ namespace Utils.Test
             registry.Register<ClassW2Properties, ClassW4PropertiesDescendant2>();
             registry.Register<ClassW2Properties, ClassW4Properties>();
 
-            var dest = registry.ResolveDestTypeDescendants<ClassW4Properties>(source);
+            var dest = registry.ResolveDescendants<ClassW4Properties>(source);
 
             Assert.IsNotNull(dest);
             Assert.IsTrue(dest.Count()==3);

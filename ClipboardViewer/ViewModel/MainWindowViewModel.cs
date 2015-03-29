@@ -52,6 +52,9 @@ namespace ClipboardViewer.ViewModel
             }
         }
 
+        [InjectValue]
+        ITypeMapperRegistry ClipboardForamtMapper { get; set; }
+
         private void OnClipboardContentChanged(object sender, EventArgs<uint> eventArgs)
         {
             if (AutoUpdate)
@@ -119,14 +122,15 @@ namespace ClipboardViewer.ViewModel
             }
         }
 
+
         private void UpdateFormats()
         {
             var porviderViewModels = new List<FormatProviderViewModel>();
-            var providerVmFactory = new FormatProviderViewModelFactory();
             foreach (IClipbordFormatProvider provider in GetAvalibleFromats())
             {
-                var providerVm = providerVmFactory.CreateProviderViewModel(provider);
-                porviderViewModels.Add(providerVm);
+                var providerVms= ClipboardForamtMapper.ResolveDescendants<FormatProviderViewModel>(provider);
+
+                porviderViewModels.AddRange(providerVms);
             }
             providers = new ReadOnlyCollection<FormatProviderViewModel>(porviderViewModels);
             base.OnPropertyChanged("Providers");

@@ -55,7 +55,6 @@
     </ApplicationDefinition>
     <Compile Include="Bootstraper.cs" />
     <Compile Include="ViewModelLocator.cs" />
-    <Compile Include="ViewModel\ClipboardContent\TextViewModel.cs" />
     <Compile Include="ViewModel\DesignTime\DBootstraper.cs" />
     <Compile Include="ViewModel\DesignTime\DMainWindowViewModel.cs" />
     <Compile Include="ViewModel\DesignTime\DViewModelLocator.cs" />
@@ -112,7 +111,9 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="ViewModel\ClipboardContent\" />
+  </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\ClipboardHelper\ClipboardHelper.csproj">

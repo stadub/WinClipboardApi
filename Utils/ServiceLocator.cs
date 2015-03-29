@@ -24,9 +24,9 @@ namespace Utils
             Interlocked.Increment(ref _curId);
         }
         //may be in future type key should changed from <Type, Name> to <TypeName, Name> to reduce memory usage
-        protected Dictionary<KeyValuePair<Type, string>, object> registeredInstances = new Dictionary<KeyValuePair<Type, string>, object>();
-        protected Dictionary<KeyValuePair<Type,string>, object> registeredInitializers = new Dictionary<KeyValuePair<Type, string>, object>();
-        private Dictionary<KeyValuePair<Type, string>, TypeBuilder> registeredTypes = new Dictionary<KeyValuePair<Type, string>, TypeBuilder>();
+        protected Dictionary<KeyValuePair<String, string>, object> registeredInstances = new Dictionary<KeyValuePair<String, string>, object>();
+        protected Dictionary<KeyValuePair<String, string>, object> registeredInitializers = new Dictionary<KeyValuePair<String, string>, object>();
+        private Dictionary<KeyValuePair<String, string>, TypeBuilder> registeredTypes = new Dictionary<KeyValuePair<String, string>, TypeBuilder>();
 
         #region Register methods
         public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>() where TClass:TInterface
@@ -40,7 +40,7 @@ namespace Utils
             var classType = typeof(TClass);
 
             if (interfaceType.IsGenericType || classType.IsGenericType)
-                throw new TypeNotSupportedException(interfaceType,"Generic Types cannot be registered by RegisterType registrationInfo registration");
+                throw new TypeNotSupportedException(interfaceType.FullName,"Generic Types cannot be registered by RegisterType registrationInfo registration");
             
             var key = GetKey(interfaceType, name);
             CheckDuplicated(key);
@@ -60,7 +60,7 @@ namespace Utils
             var interfaceType = typeof(TInterface);
             var key = GetKey(interfaceType, name);
             CheckDuplicated(key);
-            registeredInitializers.Add(new KeyValuePair<Type, string>(interfaceType, name), typeResolver);
+            registeredInitializers.Add(new KeyValuePair<String, string>(interfaceType.FullName, name), typeResolver);
         }
 
         public void RegisterInstance<TInterface, TValue>(TValue value, string name) where TValue : class, TInterface
@@ -77,7 +77,7 @@ namespace Utils
             RegisterInstance<TInterface, TValue>(value, string.Empty);
         }
 
-        protected virtual void CheckDuplicated(KeyValuePair<Type, string> interfaceType)
+        protected virtual void CheckDuplicated(KeyValuePair<String, string> interfaceType)
         {
             if (registeredTypes.ContainsKey(interfaceType))
                 throw new TypeAllreadyRegisteredException(interfaceType.Key, "Type-Type pair allready registered (via RegisterType)");
@@ -102,7 +102,7 @@ namespace Utils
             object result;
             if (TryResolve(@type, name, out result))
                 return result;
-            throw new TypeNotResolvedException(@type);
+            throw new TypeNotResolvedException(type.FullName);
         }
 
 
@@ -122,7 +122,7 @@ namespace Utils
             object result;
             var @type = typeof(T);
             if (!TryConstructType(@type, name, out result))
-                throw new TypeNotResolvedException(typeof(T));
+                throw new TypeNotResolvedException(type.FullName);
             return (T)result;
         }
 
@@ -141,7 +141,7 @@ namespace Utils
             object result;
             var @type = typeof(T);
             if (!TryResolveInstance(@type,name,out result))
-                throw new TypeNotResolvedException(typeof(T));
+                throw new TypeNotResolvedException(type.FullName);
 
             return (T)result;
         }
@@ -151,7 +151,7 @@ namespace Utils
             object result;
             var @type = typeof(T);
             if (!TryResolveInitializer(@type, out result))
-                throw new TypeNotResolvedException(typeof(T));
+                throw new TypeNotResolvedException(type.FullName);
 
             return (T)result;
         }
@@ -181,9 +181,9 @@ namespace Utils
             return false;
         }
 
-        private static KeyValuePair<Type, string> GetKey(Type @type, string name)
+        private static KeyValuePair<String, string> GetKey(Type @type, string name)
         {
-            return new KeyValuePair<Type, string>(@type, name);
+            return new KeyValuePair<String, string>(@type.FullName, name);
         }
 
         protected virtual bool TryResolveInitializer(Type @type, out object value)
@@ -210,7 +210,7 @@ namespace Utils
                 registration = registeredTypes[key];
             }
             
-            if (registration == null) throw new TypeNotResolvedException(type,"Cannot find type registration");
+            if (registration == null) throw new TypeNotResolvedException(type.FullName,"Cannot find type registration");
 
             var ctor = registration.TryGetConstructor();
 
@@ -290,56 +290,68 @@ namespace Utils
     [Serializable]
     public class ServiceLocatorException : Exception
     {
-        public Type Type{get;set;}
-        public ServiceLocatorException(Type type) { Type=type;}
-        public ServiceLocatorException(Type type, string message) : base(message) {Type=type; }
-        public ServiceLocatorException(Type type, string message, Exception inner) : base(message, inner) { Type=type;}
+        public String TypeName{get;set;}
+        public ServiceLocatorException(String typeName) { TypeName = typeName; }
+        public ServiceLocatorException(String typeName, string message) : base(message) { TypeName = typeName; }
+        public ServiceLocatorException(String typeName, string message, Exception inner) : base(message, inner) { TypeName = typeName; }
         protected ServiceLocatorException(SerializationInfo info,StreamingContext context): base(info, context) { }
     }
 
     [Serializable]
     public class TypeNotResolvedException : ServiceLocatorException
     {
-        public TypeNotResolvedException(Type type):base(type) {}
-        public TypeNotResolvedException(Type type, string message) : base(type,message) {}
-        public TypeNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
+        public TypeNotResolvedException(String typeName) : base(typeName) { }
+        public TypeNotResolvedException(String typeName, string message) : base(typeName, message) { }
+        public TypeNotResolvedException(String typeName, string message, Exception inner) : base(typeName, message, inner) { }
         protected TypeNotResolvedException(SerializationInfo info,StreamingContext context): base(info, context) { }
     }
     
     [Serializable]
     public class TypeNotSupportedException : ServiceLocatorException
     {
-        public TypeNotSupportedException(Type type):base(type) {}
-        public TypeNotSupportedException(Type type, string message) : base(type,message) {}
-        public TypeNotSupportedException(Type type, string message, Exception inner) : base(type,message, inner) {}
+        public TypeNotSupportedException(String typeName) : base(typeName) { }
+        public TypeNotSupportedException(String typeName, string message) : base(typeName, message) { }
+        public TypeNotSupportedException(String typeName, string message, Exception inner) : base(typeName, message, inner) { }
         protected TypeNotSupportedException(SerializationInfo info,StreamingContext context): base(info, context) { }
     }
     
     [Serializable]
     public class TypeInitalationException : TypeNotResolvedException
     {
-        public TypeInitalationException(Type type):base(type) {}
-        public TypeInitalationException(Type type, string message) : base(type,message) {}
-        public TypeInitalationException(Type type, string message, Exception inner) : base(type,message, inner) {}
+        public TypeInitalationException(String typeName) : base(typeName) { }
+        public TypeInitalationException(String typeName, string message) : base(typeName, message) { }
+        public TypeInitalationException(String typeName, string message, Exception inner) : base(typeName, message, inner) { }
         protected TypeInitalationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
     [Serializable]
     public class ConstructorNotResolvedException : ServiceLocatorException
     {
-        public ConstructorNotResolvedException(Type type):base(type) {}
-        public ConstructorNotResolvedException(Type type, string message) : base(type,message) {}
-        public ConstructorNotResolvedException(Type type, string message, Exception inner) : base(type,message, inner) {}
+        public ConstructorNotResolvedException(String typeName) : base(typeName) { }
+        public ConstructorNotResolvedException(String typeName, string message) : base(typeName, message) { }
+        public ConstructorNotResolvedException(String typeName, string message, Exception inner) : base(typeName, message, inner) { }
         protected ConstructorNotResolvedException(SerializationInfo info,StreamingContext context): base(info, context) { }
     }
 
     [Serializable]
     public class TypeAllreadyRegisteredException : ServiceLocatorException
     {
-        public TypeAllreadyRegisteredException(Type type) : base(type) { }
-        public TypeAllreadyRegisteredException(Type type, string message) : base(type, message) { }
-        public TypeAllreadyRegisteredException(Type type, string message, Exception inner) : base(type, message, inner) { }
+        public TypeAllreadyRegisteredException(String typeName) : base(typeName) { }
+        public TypeAllreadyRegisteredException(String typeName, string message) : base(typeName, message) { }
+        public TypeAllreadyRegisteredException(String typeName, string message, Exception inner) : base(typeName, message, inner) { }
         protected TypeAllreadyRegisteredException(SerializationInfo info,StreamingContext context): base(info, context) { }
+    }
+
+    [Serializable]
+    public class PropertyMappingException : TypeInitalationException
+    {
+        public string Property { get; private set; }
+
+        public PropertyMappingException(String typeName,String property) : base(typeName) { Property = property; }
+
+        public PropertyMappingException(String typeName, String property, string message) : base(typeName, message) { Property = property; }
+        public PropertyMappingException(String typeName, String property, string message, Exception inner) : base(typeName, message, inner) { Property = property; }
+        protected PropertyMappingException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 #endregion
 }

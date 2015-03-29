@@ -9,8 +9,12 @@ namespace Utils
     {
         IPropertyRegistrationInfo<TDest> Register<TSource, TDest>();
         void Register(ITypeMapper mapper);
+
         object Resolve(object source, Type destType);
         TDest Resolve<TDest>(object source);
+
+        IEnumerable<TDest> ResolveDescendants<TDest>(object source);
+        IEnumerable<object> ResolveDescendants(object source, Type destType);
     }
 
     public class TypeMapperRegistry : ITypeMapperRegistry
@@ -35,7 +39,7 @@ namespace Utils
         {
             var mappingKey = GetDictionaryKey(mapper.SourceType, mapper.DestType);
             if (mappingDictionary.ContainsKey(mappingKey))
-                throw new TypeAllreadyRegisteredException(mapper.SourceType);
+                throw new TypeAllreadyRegisteredException(mapper.SourceType.FullName);
 
             mappingDictionary.Add(mappingKey, mapper);
         }
@@ -52,18 +56,18 @@ namespace Utils
             var sourceType = source.GetType();
             var mappingKey = GetDictionaryKey(sourceType, destType);
             if (!mappingDictionary.ContainsKey(mappingKey))
-                throw new TypeNotResolvedException(sourceType, "Type mapping doesn't exist in the registry");
+                throw new TypeNotResolvedException(sourceType.FullName, "Type mapping doesn't exist in the registry");
             var typeBuilder = mappingDictionary[mappingKey];
             return typeBuilder.Map(source);
         }
 
-        public IEnumerable<TDest> ResolveDestTypeDescendants<TDest>(object source)
+        public IEnumerable<TDest> ResolveDescendants<TDest>(object source)
         {
             var destType = typeof(TDest);
-            return ResolveDestTypeDescendants(source, destType).Cast<TDest>();
+            return ResolveDescendants(source, destType).Cast<TDest>();
         }
 
-        public IEnumerable<object> ResolveDestTypeDescendants(object source, Type destType)
+        public IEnumerable<object> ResolveDescendants(object source, Type destType)
         {
             var sourceType = source.GetType();
             foreach (var typeMapper in mappingDictionary)
