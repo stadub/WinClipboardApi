@@ -3,6 +3,7 @@ using System.IO;
 using ClipboardHelper.FormatProviders;
 using Utils;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ClipboardViewer.ViewModel
 {
@@ -15,7 +16,7 @@ namespace ClipboardViewer.ViewModel
 
     public class FormatProviderViewModel
     {
-        [SourceProperty(Name = "FormatId")]
+        [MapSourceProperty(Name = "FormatId")]
         public string Name { get; set; }
 
         public object Data { get; set; }
@@ -87,36 +88,36 @@ namespace ClipboardViewer.ViewModel
 
     public class HtmlClipboardFormatViewModel : FormatProviderViewModel
     {
-        [SourceProperty(Path = "HtmlData.Version")]
+        [MapSourceProperty(Path = "HtmlData.Version")]
         public string Version { get; set; }
 
-        [SourceProperty(Path = "HtmlData.StartHTML")]
+        [MapSourceProperty(Path = "HtmlData.StartHTML")]
         public long StartHTML { get; set; }
 
-        [SourceProperty(Path = "HtmlData.EndHTML")]
+        [MapSourceProperty(Path = "HtmlData.EndHTML")]
         public long EndHTML { get; set; }
 
-        [SourceProperty(Path = "HtmlData.StartFragment")]
+        [MapSourceProperty(Path = "HtmlData.StartFragment")]
         public long StartFragment { get; set; }
 
-        [SourceProperty(Path = "HtmlData.EndFragment")]
+        [MapSourceProperty(Path = "HtmlData.EndFragment")]
         public long EndFragment { get; set; }
 
-        [SourceProperty(Path = "HtmlData.StartSelection")]
+        [MapSourceProperty(Path = "HtmlData.StartSelection")]
         public long StartSelection { get; set; }
 
-        [SourceProperty(Path = "HtmlData.EndSelection")]
+        [MapSourceProperty(Path = "HtmlData.EndSelection")]
         public long EndSelection { get; set; }
 
-        [SourceProperty(Path = "HtmlData.SourceURL")]
+        [MapSourceProperty(Path = "HtmlData.SourceURL")]
         public Uri SourceURL { get; set; }
 
-        [SourceProperty(Path = "HtmlData.Html")]
+        [MapSourceProperty(Path = "HtmlData.Html")]
         public string Html { get; set; }
 
     }
 
-    public class SkypeMessageTextLine
+    public class SkypeMessageTextLineViewModel
     {
         public string Text { get; set; }
         public bool Quote { get; set; }
@@ -125,24 +126,35 @@ namespace ClipboardViewer.ViewModel
 
     public class SkypeQuoteFormatViewModel : FormatProviderViewModel
     {
-        [SourceProperty(Path = "Quote.Author")]
+        public SkypeQuoteFormatViewModel()
+        {
+            LegacyQuote= new List<SkypeMessageTextLineViewModel>();
+        }
+
+        [MapSourceProperty(Path = "Quote.Author")]
         public string Author { get; set; }
 
-        [SourceProperty(Path = "Quote.AuthorName")]
+        [MapSourceProperty(Path = "Quote.AuthorName")]
         public string AuthorName { get; set; }
 
-        [SourceProperty(Path = "Quote.Conversation")]
+        [MapSourceProperty(Path = "Quote.Conversation")]
         public string Conversation { get; set; }
 
-        [SourceProperty(Path = "Quote.Guid")]
+        [MapSourceProperty(Path = "Quote.Guid")]
         public string Guid { get; set; }
 
-        [SourceProperty(Path = "Quote.Timestamp")]
+        [MapSourceProperty(Path = "Quote.Timestamp")]
         public long Timestamp { get; set; }
 
-        [SourceProperty(Path = "Quote.LegacyQuote")]
-        public List<SkypeMessageTextLine> LegacyQuote { get; set; }
+        [MapSourceProperty(Path = "Quote.LegacyQuote", UseInitalizer = "InitQuoteMessageLines")]
+        public IList<SkypeMessageTextLineViewModel> LegacyQuote { get; set; }
 
+
+        public void InitQuoteMessageLines(IList<SkypeMessageTextLine> legacyQuote)
+        {
+            var propMapper = new TypeMapper<SkypeMessageTextLine, SkypeMessageTextLineViewModel>();
+            LegacyQuote = legacyQuote.Select(line => propMapper.Map(line)).ToList();
+        }
 
     }
 

@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Utils
 {
-    public class TypeHelpers
+    public static class TypeHelpers
     {
         public static object GetDefault(Type type)
         {
@@ -15,6 +15,35 @@ namespace Utils
                 return Activator.CreateInstance(type);
             }
             return null;
+        }
+
+        public static bool TryChangeObjectType(Type destType, object sourceValue, out object value)
+        {
+            value = null;
+            if (!destType.IsInstanceOfType(sourceValue))
+            {
+                if (sourceValue == null)
+                    return true;
+
+                try
+                {
+                    var convertedValue = Convert.ChangeType(sourceValue, destType);
+                    value = convertedValue;
+                    return true;
+                }
+                catch (InvalidCastException)
+                {
+                }
+                catch (FormatException)
+                {
+                }
+                catch (OverflowException)
+                {
+                }
+                return false;
+            }
+            value = sourceValue;
+            return true;
         }
 
         public static void SetPropertyValue(PropertyInfo property, object instance, string value)
@@ -29,14 +58,10 @@ namespace Utils
                 property.SetValue(instance, value);
                 return;
             }
-            try
+            object convertedValue = null;
+            if (TryChangeObjectType(propertyType, value, out convertedValue))
             {
-                var convertedValue = Convert.ChangeType(value, propertyType);
                 property.SetValue(instance, convertedValue);
-                return;
-            }
-            catch (InvalidCastException)
-            {
             }
             //Throws MissingMethodException if corresponding constructor not found
             var propValue = Activator.CreateInstance(propertyType, value);

@@ -129,19 +129,19 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
                 Conversation = "#Cicero/$f65b360f0397c5fab",
                 Guid = "xbd317d212319792a09a7b384726393691325aa0005a15acfb6bc58a0c29b8c31",
                 Timestamp = 1035923063776,
-                LegacyQuote = new List<SkypeMessageTextLine>
+                LegacyQuote = new List<SkypeMessageTextLineViewModel>
                 {
-                    new SkypeMessageTextLine
+                    new SkypeMessageTextLineViewModel
                     {
                         Text = "[1/10/32 1:10:23 AM] de Finibus Bonorum et Malorum: ",
                         Quote = true
                     },
-                    new SkypeMessageTextLine
+                    new SkypeMessageTextLineViewModel
                     {
                         Text = "Delorem ipsum dolor sit amet, consectetur adipisicing elit," +
                                " sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
                     },
-                    new SkypeMessageTextLine {Text = "<<< ", Quote = true},
+                    new SkypeMessageTextLineViewModel {Text = "<<< ", Quote = true},
                 },
             });
 

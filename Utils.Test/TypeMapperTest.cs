@@ -52,16 +52,38 @@ namespace Utils.Test
 
         class ClassWSourcePropertyMapAttribute
         {
-            [SourceProperty(Name="Prop2")]
+            [MapSourceProperty(Name="Prop2")]
             public int Prop { get; set; }
             public int Prop2 { get; set; }
         } 
         
         class ClassWSourcePropertyPathAttribute
         {
-            [SourceProperty(Path = "Source.Prop2")]
+            [MapSourceProperty(Path = "Source.Prop2")]
             public int Prop { get; set; }
-            public int Prop2 { get; set; }
+        }
+
+
+        class ClassWSourcePropertyInitalizer
+        {
+            [MapSourceProperty(UseInitalizer = "InitProp")]
+            public int Prop { get; private set; }
+
+            public void InitProp(int value)
+            {
+                Prop = value;
+            }
+        }
+
+        class ClassWSourcePropertyInitalizerAndPropertyPath
+        {
+            [MapSourceProperty(Path = "Source.Prop2", UseInitalizer = "InitProp")]
+            public int Prop { get; private set; }
+
+            public void InitProp(int value)
+            {
+                Prop = value;
+            }
         }
 
         class TestTypeBuilder : TypeBuilderStub
@@ -73,7 +95,19 @@ namespace Utils.Test
             {
             }
 
-            protected override bool ResolvePublicNotIndexedProperty(PropertyInfo property, out object value)
+            public override TypeBuilerContext CreateBuildingContext()
+            {
+                return new TestTypeBuilerContext(DestType) { PropertyToResolve = PropertyToResolve, ProertyValue = ProertyValue };
+            }
+        }
+
+        class TestTypeBuilerContext : TypeBuilerContextStub
+        {
+            public TestTypeBuilerContext(Type destType): base(destType){}
+
+            public PropertyInfo PropertyToResolve { get; set; }
+            public object ProertyValue { get; set; }
+            public override bool ResolvePublicNotIndexedProperty(PropertyInfo property, out object value)
             {
                 if (property == PropertyToResolve)
                 {
@@ -82,6 +116,8 @@ namespace Utils.Test
                 }
                 return base.ResolvePublicNotIndexedProperty(property, out value);
             }
+
+
         }
 
         #endregion TestClasses
@@ -92,8 +128,8 @@ namespace Utils.Test
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
             var dest = mapper.Map(new ClassW2Properties { Prop = 1,Prop2 = 2});
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop == 1);
-            Assert.IsTrue(dest.Prop2 == 2);
+            Assert.AreEqual(1, dest.Prop);
+            Assert.AreEqual(2,dest.Prop2);
         }
 
         
@@ -113,7 +149,7 @@ namespace Utils.Test
             var source = new ClassW2Properties();
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Source == source);
+            Assert.AreEqual(dest.Source, source);
         }
 
 
@@ -125,7 +161,7 @@ namespace Utils.Test
             var source = new ClassW2Properties();
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop3 == 3);
+            Assert.AreEqual(3, dest.Prop3);
         }
 
         [TestMethod]
@@ -137,24 +173,23 @@ namespace Utils.Test
             var source = new ClassW2Properties{ Prop = 1,Prop2 = 2};
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop == 0);
-            Assert.IsTrue(dest.Prop2 == 2);
+            Assert.AreEqual(0, dest.Prop);
+            Assert.AreEqual(2, dest.Prop2);
         }
 
         [TestMethod]
         public void ShouldResolvePropertySetByBaseResolver()
         {
             var destType = typeof (ClassW4Properties);
+
             var testBuilder = new TestTypeBuilder(destType);
             testBuilder.PropertyToResolve = destType.GetProperty("Prop3");
             testBuilder.ProertyValue = 3;
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(testBuilder);
-
-            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
             var source = new ClassW2Properties();
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop3 == 3);
+            Assert.AreEqual(3, dest.Prop3);
         }
 
         [TestMethod]
@@ -168,7 +203,7 @@ namespace Utils.Test
             var source = new ClassW2Properties { Prop2 = 2 };
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop2 == 2);
+            Assert.AreEqual(2, dest.Prop2);
         }
 
         [TestMethod]
@@ -190,7 +225,7 @@ namespace Utils.Test
             var source = new ClassW2Properties { Prop2 = 2 };
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop2 == 2);
+            Assert.AreEqual(2, dest.Prop2);
 
 
             Assert.IsNotNull(dest.Prop4);
@@ -206,14 +241,34 @@ namespace Utils.Test
             var source = new ClassW2Properties {Prop = 1, Prop2 = 2};
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsTrue(dest.Prop == 2);
-            Assert.IsTrue(dest.Prop2 == 2);
+            Assert.AreEqual(2, dest.Prop);
+            Assert.AreEqual(2, dest.Prop2);
         }
 
         [TestMethod]
         public void ShouldResolvePropertyPathForPropertyWAttribute()
         {
             var mapper = new TypeMapper<ClassWithSourceCtor, ClassWSourcePropertyPathAttribute>();
+            var source = new ClassWithSourceCtor(new ClassW2Properties {Prop = 1, Prop2 = 2});
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(2, dest.Prop);
+        }
+
+        [TestMethod]
+        public void ShouldResolvePropertyByInitalizer()
+        {
+            var mapper = new TypeMapper<ClassW2Properties, ClassWSourcePropertyInitalizer>();
+            var source = new ClassW2Properties { Prop = 1, Prop2 = 2 };
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(1, dest.Prop);
+        }
+        
+        [TestMethod]
+        public void ShouldResolvePropertyByInitalizerWithPathSet()
+        {
+            var mapper = new TypeMapper<ClassWithSourceCtor, ClassWSourcePropertyInitalizerAndPropertyPath>();
             var source = new ClassWithSourceCtor(new ClassW2Properties {Prop = 1, Prop2 = 2});
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);

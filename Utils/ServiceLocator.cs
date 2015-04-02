@@ -214,13 +214,16 @@ namespace Utils
 
             var ctor = registration.TryGetConstructor();
 
+            var context = registration.CreateBuildingContext();
             //value types have no default constructor and shpuld be initalized by default value
             if (ctor == null && registration.DestType.IsValueType)
-                value=TypeHelpers.GetDefault(registration.DestType);
+                value = TypeHelpers.GetDefault(registration.DestType);
             else
-                value = registration.CreateInstance(ctor,type);
-
-            registration.InjectTypeProperties(value);
+            {
+                registration.CreateInstance(ctor, type.FullName, context);
+                value = context.Instance;
+            }
+            registration.InjectTypeProperties(context);
             return true;
         }     
 

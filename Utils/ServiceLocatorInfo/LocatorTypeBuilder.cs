@@ -13,7 +13,23 @@ namespace Utils
             this.serviceLocator = serviceLocator;
         }
 
-        protected override bool ResolveParameter(ParameterInfo paramInfo, out object value)
+
+        public override TypeBuilerContext CreateBuildingContext()
+        {
+            return new LocatorTypeBuilderContext(serviceLocator,DestType);
+        }
+    }
+
+    class LocatorTypeBuilderContext : TypeBuilerContext
+    {
+        private readonly ServiceLocator serviceLocator;
+        public LocatorTypeBuilderContext(ServiceLocator serviceLocator, Type destType)
+            : base(destType)
+        {
+            this.serviceLocator = serviceLocator;
+        }
+
+        public override bool ResolveParameter(ParameterInfo paramInfo, string methodName, out object value)
         {
             var parametrType = paramInfo.ParameterType;
             var name = string.Empty;
@@ -23,34 +39,34 @@ namespace Utils
         }
 
         //executed only when PropertyInjectionResolvers compilation option is defined
-        protected override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
+        public override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
         {
             throw new NotImplementedException();
         }
 
-        protected override bool ResolvePropertyInjection(Type propertyType, string name, out object value)
+        public override bool ResolvePropertyInjection(string propertyName, Type propertyType, string name, out object value)
         {
             return serviceLocator.TryResolve(propertyType, name, out value);
         }
 
-        protected override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
+        public override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
         {
             return serviceLocator.TryResolve(propertyType, name, out value);
         }
 
-        protected override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
+        public override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
         {
             return serviceLocator.TryResolve(propertyType, name, out value);
         }
 
 
-        protected override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
+        public override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
         {
             value = null;
             return false;
         }
 
-        protected override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(List<PropertyInfo> resolvedProperties)
+        public override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(IList<PropertyInfo> resolvedProperties)
         {
             return new Dictionary<PropertyInfo, object>();
         }
