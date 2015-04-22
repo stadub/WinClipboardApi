@@ -52,7 +52,7 @@ namespace Utils.Test
             var source = new ClassW2Properties {Prop = 1, Prop2 = 2};
 
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
-            registry.Register(mapper);
+            registry.Register<ClassW2Properties, ClassW4Properties>(mapper);
 
             var dest = registry.Resolve<ClassW4Properties>(source);
 
@@ -97,7 +97,7 @@ namespace Utils.Test
             var registry = new TypeMapperRegistry();
 
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
-            registry.Register(mapper);
+            registry.Register<ClassW2Properties, ClassW4Properties>(mapper);
 
             registry.Register<ClassW2Properties, ClassW4Properties>();
         }
@@ -109,7 +109,7 @@ namespace Utils.Test
             var source = new ClassW2Properties { Prop = 1, Prop2 = 2 };
 
             var mapper = new TypeMapper<ClassW2Properties, ClassW4PropertiesDescendant1>();
-            registry.Register(mapper);
+            registry.Register<ClassW2Properties, ClassW4PropertiesDescendant1>(mapper);
             registry.Register<ClassW2Properties, ClassW4PropertiesDescendant2>();
             registry.Register<ClassW2Properties, ClassW4Properties>();
 

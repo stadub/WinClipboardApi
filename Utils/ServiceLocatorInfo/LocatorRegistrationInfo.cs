@@ -7,15 +7,34 @@ namespace Utils.ServiceLocatorInfo
 {
     public interface IPropertyRegistrationInfo<TClass>
     {
-        void InjectPropertyValue<TProp>(Expression<Func<TClass, TProp>> expression, TProp value);
-        void IgnoreProperty<TProp>(Expression<Func<TClass, TProp>> expression);
+        void InjectPropertyValue<TProp>(Expression<Func<TClass, TProp>> poperty, TProp value);
+        void IgnoreProperty<TProp>(Expression<Func<TClass, TProp>> poperty);
+    }
+    
+    public interface IPropertyMappingInfo<TClass>
+    {
+        void MapProperty<TSourceProp,TProp>(Expression<Func<TClass,TSourceProp, TProp>> poperty, ITypeMapper<TSourceProp, TProp> mapper);
     }
 
+    public class PropertyMappingInfo<TClass> : IPropertyMappingInfo<TClass>
+    {
+        public PropertyMappingInfo()
+        {
+            this.Mapping = new List<KeyValuePair<Expression, ITypeMapper>>();
+        }
+
+        public IList<KeyValuePair<Expression, ITypeMapper>> Mapping { get; private set; }
+        public void MapProperty<TSourceProp, TProp>(Expression<Func<TClass, TSourceProp, TProp>> poperty, ITypeMapper<TSourceProp, TProp> mapper)
+        {
+            Mapping.Add(new KeyValuePair<Expression, ITypeMapper>(poperty, mapper));
+        }
+
+    }
 
     public interface ILocatorRegistrationInfo<TClass> : IPropertyRegistrationInfo<TClass>
     {
-        void InjectProperty<TProp>(Expression<Func<TClass, TProp>> expression);
-        void InjectNamedProperty<TProp>(Expression<Func<TClass, TProp>> expression,string reristeredName);
+        void InjectProperty<TProp>(Expression<Func<TClass, TProp>> poperty);
+        void InjectNamedProperty<TProp>(Expression<Func<TClass, TProp>> poperty,string reristeredName);
     }
 
     public class LocatorRegistrationInfo<TClass> : ILocatorRegistrationInfo<TClass>
@@ -27,9 +46,9 @@ namespace Utils.ServiceLocatorInfo
             this.type = type;
         }
 
-        public void InjectPropertyValue<TProp>(Expression<Func<TClass, TProp>> expression, TProp value)
+        public void InjectPropertyValue<TProp>(Expression<Func<TClass, TProp>> poperty, TProp value)
         {
-            var propInfo = GetPropertyInfo(expression);
+            var propInfo = TypeHelpers.GetPropertyInfo(poperty);
             type.PropertyValueResolvers.Add(new KeyValuePair<PropertyInfo, object>(propInfo, value));
         }
 #if PropertyInjectionResolvers
@@ -40,39 +59,23 @@ namespace Utils.ServiceLocatorInfo
             type.PropertyInjectionResolvers.Add(new KeyValuePair<PropertyInfo, Type>(propInfo, typeof(TBindType)));
         }
 #endif
-        public void InjectProperty<TProp>(Expression<Func<TClass, TProp>> expression)
+        public void InjectProperty<TProp>(Expression<Func<TClass, TProp>> poperty)
         {
-            InjectNamedProperty(expression, string.Empty);
+            InjectNamedProperty(poperty, string.Empty);
         }
 
-        public void InjectNamedProperty<TProp>(Expression<Func<TClass, TProp>> expression,string reristeredName)
+        public void InjectNamedProperty<TProp>(Expression<Func<TClass, TProp>> poperty,string reristeredName)
         {
-            var propInfo = GetPropertyInfo(expression);
+            var propInfo = TypeHelpers.GetPropertyInfo(poperty);
             type.PropertyInjections.Add(new KeyValuePair<string, PropertyInfo>(reristeredName, propInfo));
         }
 
         public void IgnoreProperty<TProp>(Expression<Func<TClass, TProp>> expression)
         {
-            var propInfo = GetPropertyInfo(expression);
+            var propInfo = TypeHelpers.GetPropertyInfo(expression);
             type.IgnoreProperties.Add(propInfo);
         }
 
-        private static PropertyInfo GetPropertyInfo(Expression expression)
-        {
-            switch (expression.NodeType)
-            {
-                case ExpressionType.Lambda:
-                    return GetPropertyInfo(((LambdaExpression)expression).Body);
-                case ExpressionType.MemberAccess:
-                    {
-                        var ma = (MemberExpression)expression;
-                        var prop = ma.Member as PropertyInfo;
-                        return prop;
-                    }
-                default:
-                    throw new ArgumentException("Only property expression is alowed", "expression");
-            }
-        }
     }
     
 }

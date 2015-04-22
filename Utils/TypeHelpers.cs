@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Utils
@@ -91,6 +93,28 @@ namespace Utils
 
             return propertyValue.ToString();
 
+        }
+
+        public static PropertyInfo GetPropertyInfo<TClass, TProp>(Expression<Func<TClass, TProp>> poperty)
+        {
+            return GetPropertyInfo((Expression)poperty);
+        }
+
+        internal static PropertyInfo GetPropertyInfo(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Lambda:
+                    return GetPropertyInfo(((LambdaExpression)expression).Body);
+                case ExpressionType.MemberAccess:
+                    {
+                        var ma = (MemberExpression)expression;
+                        var prop = ma.Member as PropertyInfo;
+                        return prop;
+                    }
+                default:
+                    throw new ArgumentException("Only property expression is alowed", "expression");
+            }
         }
     }
     public class FormatedAttribute : Attribute

@@ -24,7 +24,7 @@ namespace Utils
     {
         private readonly ServiceLocator serviceLocator;
         public LocatorTypeBuilderContext(ServiceLocator serviceLocator, Type destType)
-            : base(destType)
+            : base(destType, new Dictionary<PropertyInfo, ITypeMapper>())
         {
             this.serviceLocator = serviceLocator;
         }
@@ -39,31 +39,48 @@ namespace Utils
         }
 
         //executed only when PropertyInjectionResolvers compilation option is defined
-        public override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyInjectionByResolver(PropertyInfo propInfo, string name)
         {
             throw new NotImplementedException();
         }
 
-        public override bool ResolvePropertyInjection(string propertyName, Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyInjection(PropertyInfo propInfo, string injectionName)
         {
-            return serviceLocator.TryResolve(propertyType, name, out value);
+
+            object value;
+            if (serviceLocator.TryResolve(propInfo.PropertyType, injectionName, out value))
+            {
+                return MapProperty(propInfo, value);
+            }
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyValueInjection(PropertyInfo propInfo, string name)
         {
-            return serviceLocator.TryResolve(propertyType, name, out value);
+
+            object value;
+            if (serviceLocator.TryResolve(propInfo.PropertyType, name, out value))
+            {
+                return MapProperty(propInfo, value);
+            }
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyNamedInstance(PropertyInfo propertyInfo, string name)
         {
-            return serviceLocator.TryResolve(propertyType, name, out value);
+            
+            object value;
+            if (serviceLocator.TryResolve(propertyInfo.PropertyType, name, out value))
+            {
+                return MapProperty(propertyInfo, value);
+            }
+            return MappingResult.NotResolved;
         }
 
 
-        public override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
+        public override MappingResult ResolvePublicNotIndexedProperty(PropertyInfo propertyType)
         {
-            value = null;
-            return false;
+            return MappingResult.NotResolved;
         }
 
         public override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(IList<PropertyInfo> resolvedProperties)

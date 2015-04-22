@@ -45,9 +45,14 @@ namespace Utils.Test
 
         interface ITestClass { }
 
-        class TestClassWProperty : ITestClass
+        class TestClassWIntListProperty : ITestClass
         {
             public IList<int> Prop { get; set; }
+        } 
+        
+        class TestClassWStringListProperty : ITestClass
+        {
+            public IList<string> Prop { get; set; }
         }
 
         class ClassWSourcePropertyMapAttribute
@@ -103,18 +108,17 @@ namespace Utils.Test
 
         class TestTypeBuilerContext : TypeBuilerContextStub
         {
-            public TestTypeBuilerContext(Type destType): base(destType){}
+            public TestTypeBuilerContext(Type destType): base(destType,new Dictionary<PropertyInfo, ITypeMapper>()){}
 
             public PropertyInfo PropertyToResolve { get; set; }
             public object ProertyValue { get; set; }
-            public override bool ResolvePublicNotIndexedProperty(PropertyInfo property, out object value)
+            public override MappingResult ResolvePublicNotIndexedProperty(PropertyInfo property)
             {
                 if (property == PropertyToResolve)
                 {
-                    value = ProertyValue;
-                    return true;
+                    return MapProperty(property, ProertyValue);
                 }
-                return base.ResolvePublicNotIndexedProperty(property, out value);
+                return base.ResolvePublicNotIndexedProperty(property);
             }
 
 
@@ -211,7 +215,7 @@ namespace Utils.Test
         {
             var locator = new ServiceLocator();
             locator
-                .RegisterType<ITestClass, TestClassWProperty>()
+                .RegisterType<ITestClass, TestClassWIntListProperty>()
                 .InjectProperty(classWProp => classWProp.Prop);
 
             var list = new List<int>();
@@ -229,7 +233,7 @@ namespace Utils.Test
 
 
             Assert.IsNotNull(dest.Prop4);
-            var instance = dest.Prop4 as TestClassWProperty;
+            var instance = dest.Prop4 as TestClassWIntListProperty;
 
             Assert.IsTrue(ReferenceEquals(instance.Prop, list));
         }
@@ -273,6 +277,33 @@ namespace Utils.Test
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
             Assert.IsTrue(dest.Prop == 2);
+        }
+        
+        
+        [TestMethod]
+        public void ShouldMapProperyWArray()
+        {
+            var mapper = new TypeMapper<TestClassWIntListProperty, TestClassWStringListProperty>();
+
+
+            var arrMapper = new ArrayTypeMapper<int, string>(new MappingFunc<int, string>(i => i.ToString()));
+
+            mapper.PropertyMappingInfo.MapProperty((property, ints) => property.Prop,arrMapper);
+
+
+            var arr = new[] {1, 2, 3, 4, 5, 6, 7, 8};
+
+            var source = new TestClassWIntListProperty { Prop = new List<int>(arr) };
+
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                Assert.AreEqual(arr[i].ToString(), dest.Prop[i]);
+            }
+           
         }
     }
 }

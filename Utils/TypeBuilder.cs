@@ -195,10 +195,7 @@ namespace Utils
                 if(resolvedProperties.Contains(prop.Key))
                     continue;
                 object propValue;
-                var result = ResolvePropertyInjectionByResolver(prop.Value, string.Empty, out propValue);
-                if(result)
-                    prop.Key.SetValue(instance, propValue);
-                resolvedProperties.Add(prop.Key);
+                context.ResolvePropertyInjectionByResolver(prop.Key, string.Empty);
             }
 #endif
             //Inject registered property injections
@@ -207,12 +204,7 @@ namespace Utils
                 var info = prop.Value;
                 if (resolvedProperties.Contains(info))
                     continue;
-                Object propValue;
-                if (context.ResolvePropertyInjection(info.Name, info.PropertyType, prop.Key, out propValue))
-                {
-                    info.SetValue(instance, propValue);
-                    resolvedProperties.Add(info);
-                }
+                context.ResolvePropertyInjection(info, prop.Key);
             }
 
             //resolving injection properties, that doesn't registered in the "PropertyInjections"
@@ -235,12 +227,7 @@ namespace Utils
                 }
                 else
                 {
-                    Object propValue;
-                    if (context.ResolvePropertyValueInjection(prop.PropertyType, string.Empty, out propValue))
-                    {
-                        prop.SetValue(instance, propValue);
-                        resolvedProperties.Add(prop);
-                    }
+                    context.ResolvePropertyValueInjection(prop, string.Empty);
                 }
                 
             }
@@ -250,23 +237,13 @@ namespace Utils
             foreach (var prop in propsToInject)
             {
                 var injectType = prop.GetCustomAttribute<InjectInstanceAttribute>();
-                Object propValue;
-                if (context.ResolvePropertyNamedInstance(prop.PropertyType, injectType.Name, out propValue))
-                {
-                    prop.SetValue(instance, propValue);
-                    resolvedProperties.Add(prop);
-                }
+                context.ResolvePropertyNamedInstance(prop, injectType.Name);
             }
             var publicNotIndexedProperties = GetPublicNotIndexedProperties(DestType).Except(resolvedProperties);
 
             foreach (PropertyInfo publicNotIndexedProperty in publicNotIndexedProperties)
             {
-                object value;
-                if (context.ResolvePublicNotIndexedProperty(publicNotIndexedProperty, out value))
-                {
-                    publicNotIndexedProperty.SetValue(instance, value);
-                    resolvedProperties.Add(publicNotIndexedProperty);
-                }
+                context.ResolvePublicNotIndexedProperty(publicNotIndexedProperty);
             }
             var customResolverValues = context.ResolvePropertiesCustom(resolvedProperties);
             foreach (var customResolverValue in customResolverValues)
@@ -295,7 +272,7 @@ namespace Utils
 
         public override TypeBuilerContext CreateBuildingContext()
         {
-            return new TypeBuilerContextStub(DestType);
+            return new TypeBuilerContextStub(DestType, new Dictionary<PropertyInfo, ITypeMapper>());
         }
     }
 
@@ -304,95 +281,99 @@ namespace Utils
 
     public abstract class TypeBuilerContext
     {
+        private Dictionary<PropertyInfo, ITypeMapper> properyMappers;
         public IList<PropertyInfo> ResolvedProperties { get; private set; }
         public object Instance { get; set; }
         public Type DestType { get; private set; }
 
-        protected TypeBuilerContext(Type destType)
+        protected TypeBuilerContext(Type destType, Dictionary<PropertyInfo, ITypeMapper> properyMappers)
         {
             DestType = destType;
+            this.properyMappers = properyMappers;
             ResolvedProperties = new List<PropertyInfo>();
         }
 
-        public abstract bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value);
+        public abstract MappingResult ResolvePropertyInjectionByResolver(PropertyInfo propInfo, string name);
 
-        public abstract bool ResolvePropertyInjection(string propertyName, Type propertyType, string injectionName, out object value);
-        public abstract bool ResolvePropertyValueInjection(Type propertyType, string name, out object value);
-        public abstract bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value);
+        public abstract MappingResult ResolvePropertyInjection(PropertyInfo propInfo, string injectionName);
+        public abstract MappingResult ResolvePropertyValueInjection(PropertyInfo propInfo, string name);
+        public abstract MappingResult ResolvePropertyNamedInstance(PropertyInfo propInfo, string name);
 
-        public abstract bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value);
+        public abstract MappingResult ResolvePublicNotIndexedProperty(PropertyInfo propInfo);
 
         public abstract Dictionary<PropertyInfo, object> ResolvePropertiesCustom(IList<PropertyInfo> resolvedProperties);
 
-        public abstract bool ResolveParameter(ParameterInfo paramInfo,string methodName, out object value);
+        public abstract bool ResolveParameter(ParameterInfo paramInfo, string methodName, out object value);
+
+
+        protected MappingResult MapProperty(PropertyInfo propertyInfo, object value)
+        {
+            if(properyMappers.ContainsKey(propertyInfo))
+            {
+                var conversionResult=properyMappers[propertyInfo].Map(value);
+                propertyInfo.SetValue(Instance, conversionResult);
+                ResolvedProperties.Add(propertyInfo);
+                return MappingResult.Resolved;
+            }
+            if (TypeHelpers.TryChangeObjectType(propertyInfo.PropertyType, value, out value))
+            {
+                propertyInfo.SetValue(Instance, value);
+                ResolvedProperties.Add(propertyInfo);
+                return MappingResult.Resolved;
+            }
+            return MappingResult.NotResolved;
+        }
     }
     
     public class TypeBuilerContextStub:TypeBuilerContext
     {
-        
-        public override bool ResolveParameter(ParameterInfo paramInfo,string methodName, out object value)
+
+        public override bool ResolveParameter(ParameterInfo paramInfo, string methodName, out object value)
         {
-            return NotResolved(out value);
+            value = null;
+            return false;
         }
 
-        public override bool ResolvePropertyInjectionByResolver(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyInjectionByResolver(PropertyInfo propInfo, string name)
         {
-            return NotResolved(out value);
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePropertyInjection(string propertyName, Type propertyType, string injectionName, out object value)
+        public override MappingResult ResolvePropertyInjection(PropertyInfo propInfo, string injectionName)
         {
-            return NotResolved(out value);
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePropertyValueInjection(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyValueInjection(PropertyInfo propInfo, string name)
         {
-            return NotResolved(out value);
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePropertyNamedInstance(Type propertyType, string name, out object value)
+        public override MappingResult ResolvePropertyNamedInstance(PropertyInfo propertyType, string name)
         {
-            return NotResolved(out value);
+            return MappingResult.NotResolved;
         }
 
-        public override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyType, out object value)
+        public override MappingResult ResolvePublicNotIndexedProperty(PropertyInfo propertyType)
         {
-            return NotResolved(out value);
+            return MappingResult.NotResolved;
         }
 
         public override Dictionary<PropertyInfo, object> ResolvePropertiesCustom(IList<PropertyInfo> resolvedProperties)
         {
             return new Dictionary<PropertyInfo, object>();
         }
-        
-        private static bool NotResolved(out object value)
-        {
-            value = null;
-            return false;
-        }
 
-        public TypeBuilerContextStub(Type destType) : base(destType)
+        public TypeBuilerContextStub(Type destType, Dictionary<PropertyInfo, ITypeMapper> properyMappers) : base(destType,properyMappers)
         {
         }
     }
 
-    public sealed class PropertyMappingResilt
+    public enum MappingResult
     {
-        public static PropertyMappingResilt MapProperty()
-        {
-
-        }
-        private PropertyMappingResilt()
-        {
-
-        }
-        public static PropertyMappingResilt Resolved(){
-
-        }
-        public static PropertyMappingResilt NotResolved()
-        {
-
-        }
+        NotResolved=0,
+        Resolved=1
     }
+   
 
 }

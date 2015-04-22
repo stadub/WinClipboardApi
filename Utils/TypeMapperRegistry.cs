@@ -8,7 +8,7 @@ namespace Utils
     public interface ITypeMapperRegistry
     {
         IPropertyRegistrationInfo<TDest> Register<TSource, TDest>();
-        void Register(ITypeMapper mapper);
+        void Register<TSource, TDest>(ITypeMapper mapper);
 
         object Resolve(object source, Type destType);
         TDest Resolve<TDest>(object source);
@@ -19,27 +19,30 @@ namespace Utils
 
     public class TypeMapperRegistry : ITypeMapperRegistry
     {
-        protected Dictionary<KeyValuePair<string, string>, ITypeMapper> mappingDictionary = new Dictionary<KeyValuePair<string, string>, ITypeMapper>();
+        protected Dictionary<KeyValuePair<string, Type>, ITypeMapper> mappingDictionary = new Dictionary<KeyValuePair<string, Type>, ITypeMapper>();
 
 
-        protected static KeyValuePair<string, string> GetDictionaryKey(Type sourceType, Type destType)
+        protected static KeyValuePair<string, Type> GetDictionaryKey(Type sourceType, Type destType)
         {
-            return new KeyValuePair<String, String>(sourceType.FullName, destType.FullName);
+            return new KeyValuePair<String, Type>(sourceType.FullName, destType);
         }
 
         public IPropertyRegistrationInfo<TDest> Register<TSource, TDest>() 
         {
             var typeBuilder = new TypeMapper<TSource,TDest>();
-            Register(typeBuilder);
+            Register<TSource, TDest>(typeBuilder);
 
             return typeBuilder.MappingInfo;
         }
 
-        public void Register(ITypeMapper mapper)
+        public void Register<TSource,TDest>(ITypeMapper mapper)
         {
-            var mappingKey = GetDictionaryKey(mapper.SourceType, mapper.DestType);
+            var sourceType = typeof (TSource);
+            var destType = typeof(TDest);
+
+            var mappingKey = GetDictionaryKey(sourceType, destType);
             if (mappingDictionary.ContainsKey(mappingKey))
-                throw new TypeAllreadyRegisteredException(mapper.SourceType.FullName);
+                throw new TypeAllreadyRegisteredException(sourceType.FullName);
 
             mappingDictionary.Add(mappingKey, mapper);
         }
@@ -73,7 +76,7 @@ namespace Utils
             foreach (var typeMapper in mappingDictionary)
             {
                 var registeredType = typeMapper.Key;
-                var registeredDestType = typeMapper.Value.DestType;
+                var registeredDestType = typeMapper.Key.Value;
 
                 if(sourceType.FullName!=registeredType.Key)
                     continue;

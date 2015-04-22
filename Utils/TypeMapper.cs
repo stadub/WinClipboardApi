@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Utils.ServiceLocatorInfo;
 
@@ -10,15 +11,39 @@ namespace Utils
     public interface ITypeMapper
     {
         object Map(object source);
-        Type DestType { get; }
-        Type SourceType { get; }
+    }
+
+    public interface ITypeMapper<in TSource, out TDest> : ITypeMapper
+    {
+        TDest Map(TSource source);
     }
 
 
-    public class TypeMapper<TSource,TDest> : ITypeMapper
+    public class MappingFunc<TSource, TDest> : ITypeMapper<TSource, TDest>
+    {
+        private readonly Func<TSource,TDest> mapper;
+
+        public MappingFunc(Func<TSource,TDest> mapper)
+        {
+            this.mapper = mapper;
+        }
+
+        object ITypeMapper.Map(object source)
+        {
+            return Map((TSource)source);
+        }
+
+        public TDest Map(TSource source)
+        {
+            return mapper(source);
+        }
+    }
+
+    public class TypeMapper<TSource, TDest> : ITypeMapper<TSource, TDest>
     {
         private readonly TypeBuilder baseBuilder;
         private readonly TypeBuilder mappingInfoStub;
+        private readonly PropertyMappingInfo<TDest> propertyMappingInfo;
 
         public TypeMapper():this(new TypeBuilderStub(typeof(TDest)))
         {
@@ -32,6 +57,7 @@ namespace Utils
             mappingInfoStub = new TypeBuilderStub(DestType);
             MappingInfo = new LocatorRegistrationInfo<TDest>(mappingInfoStub);
             SourceType = typeof(TSource);
+            propertyMappingInfo = new PropertyMappingInfo<TDest>();
         }
 
         public TypeMapper(ServiceLocator locator): this(new LocatorTypeBuilder(locator, typeof(TDest)))
@@ -42,13 +68,19 @@ namespace Utils
         public IPropertyRegistrationInfo<TDest> MappingInfo { get; private set; }
         public ILocatorRegistrationInfo<TDest> LocatorMappingInfo { get; private set; }
 
-        public TDest Map(object source)
+        public IPropertyMappingInfo<TDest> PropertyMappingInfo
+        {
+            get { return propertyMappingInfo; }
+        }
+
+
+        public TDest Map(TSource source)
         {
             if (DestType.IsGenericType || DestType.IsGenericType)
                 throw new TypeNotSupportedException(DestType.FullName, "Generic types are not supported");
 
             var mapper = new MappingTypeBuilder(DestType, baseBuilder);
-
+            mapper.PropertyMappings = propertyMappingInfo.Mapping;
             mapper.PropertyValueResolvers.AddRange(mappingInfoStub.PropertyValueResolvers);
             mapper.IgnoreProperties.AddRange(mappingInfoStub.IgnoreProperties);
             mapper.PropertyInjections.AddRange(mappingInfoStub.PropertyInjections);
@@ -60,6 +92,7 @@ namespace Utils
             context.SourceType = source.GetType();
             mapper.CreateInstance(ctor, DestType.FullName, context);
             mapper.CallInitMethod(context);
+
             mapper.InjectTypeProperties(context);
             
             return (TDest)context.Instance;
@@ -71,7 +104,7 @@ namespace Utils
 
         object ITypeMapper.Map(object source)
         {
-            return Map(source);
+            return Map((TSource)source);
         }
     }
 
@@ -86,18 +119,30 @@ namespace Utils
         public MappingTypeBuilder(Type destType, TypeBuilder baseBuilder): base(destType)
         {
             this.baseBuilder = baseBuilder;
-            var propMapAttributeSet=destType.GetProperties()
-                .Select(prop => Tuple.Create(prop.GetCustomAttribute<MapSourcePropertyAttribute>(), prop));
+            var propMapAttributeSet=destType.GetProperties();
 
-            var propUseInitalizer = propMapAttributeSet.Where(x => x.Item1 != null && x.Item1.UseInitalizer != null);
-            var propInitalizerInjection = propUseInitalizer.Select(x => new KeyValuePair<string, PropertyInfo>(x.Item1.UseInitalizer, x.Item2));
+            foreach (var prop in propMapAttributeSet)
+            {
+                var mapAttribute = prop.GetCustomAttribute<MapSourcePropertyAttribute>();
+                if(mapAttribute==null)
+                    continue;
 
-            base.PropertyInjections.AddRange(propInitalizerInjection);
+                base.PropertyInjections.Add(new KeyValuePair<string, PropertyInfo>(prop.Name,prop));
+            }
         }
+
+        public IList<KeyValuePair<Expression, ITypeMapper>> PropertyMappings { get; set; }
 
         public override TypeBuilerContext CreateBuildingContext()
         {
-            return new TypeMaperContext(DestType);
+            var properyMappers= new Dictionary<PropertyInfo, ITypeMapper>();
+            foreach (var propertyMapping in PropertyMappings)
+            {
+                var propInfo = TypeHelpers.GetPropertyInfo(propertyMapping.Key);
+                properyMappers.Add(propInfo,propertyMapping.Value);
+            }
+
+            return new TypeMaperContext(DestType,properyMappers);
         }
 
         protected internal override void InjectTypeProperties(TypeBuilerContext context)
@@ -124,26 +169,25 @@ namespace Utils
     {
         public Object Source { get; set; }
         public Type SourceType { get; set; }
-        public TypeMaperContext(Type destType) : base(destType)
+        public TypeMaperContext(Type destType, Dictionary<PropertyInfo, ITypeMapper> properyMappers) : base(destType,properyMappers)
         {
             
         }
-        public override bool ResolvePublicNotIndexedProperty(PropertyInfo propertyInfo, out object value)
+        public override MappingResult ResolvePublicNotIndexedProperty(PropertyInfo propertyInfo)
         {
-            bool result = false;
-            value = null;
+            MappingResult result = MappingResult.NotResolved;
 
             var srcPropMap = propertyInfo.GetCustomAttribute<MapSourcePropertyAttribute>();
             if (srcPropMap != null)
             {
-                result = ResolvePropertyMarkedSourcePropertyAttribute(propertyInfo.Name, propertyInfo.PropertyType, srcPropMap, out value);
+                result = ResolvePropertyMarkedSourcePropertyAttribute(propertyInfo, srcPropMap);
             }
 
-            if (!result)
-                result = TryMapProperty(propertyInfo.Name, propertyInfo.PropertyType, out value);
+            if (result!=MappingResult.Resolved)
+                result = TryMapProperty(propertyInfo);
 
-            if (!result)
-                result = base.ResolvePublicNotIndexedProperty(propertyInfo, out value);
+            if (result != MappingResult.Resolved)
+                result = base.ResolvePublicNotIndexedProperty(propertyInfo);
 
             return result;
         }
@@ -155,31 +199,29 @@ namespace Utils
                 value = Source;
                 return true;
             }
-            return TryMapProperty(paramInfo.Name, paramInfo.ParameterType, out value) ||
-                base.ResolveParameter(paramInfo,methodName, out value);
+
+            value = null;
+            bool result = false;
+            var prop = TryFindAppropriateProperty(paramInfo.Name, SourceType);
+            if (prop != null)
+            {
+                result= TypeHelpers.TryChangeObjectType(paramInfo.ParameterType, prop.GetValue(Source), out value);
+                
+            }
+
+            return result || base.ResolveParameter(paramInfo,methodName, out value);
         }
 
 
-        public override bool ResolvePropertyInjection(string propertyName, Type propertyType, string injectionName, out object value)
+        public override MappingResult ResolvePropertyInjection(PropertyInfo propInfo, string injectionName)
         {
+            var propertyName = propInfo.Name;
+
             var propAttr = DestType.GetProperty(propertyName).GetCustomAttribute<MapSourcePropertyAttribute>();
 
-            object propResolveValue = null;
-            var result = ResolvePropertyMarkedSourcePropertyAttribute(propertyName, propertyType, propAttr, out propResolveValue);
-            if (!result)
-            {
-                var prop = TryFindAppropriateProperty(propertyName, SourceType);
-                if (prop != null)
-                    result = TypeHelpers.TryChangeObjectType(propertyType, prop.GetValue(Source), out value);
-            }
-            if (result)
-            {
-                DestType.GetMethod(injectionName).Invoke(base.Instance, new[] {propResolveValue});
-                value = null;
-                return false;//TODO:Should be changed to InMethod property set
-            }
-
-            return base.ResolvePropertyInjection(propertyName, propertyType, injectionName, out value);
+            var result= ResolvePropertyMarkedSourcePropertyAttribute(propInfo, propAttr);
+            
+            return result==MappingResult.Resolved ? result : base.ResolvePropertyInjection(propInfo, injectionName);
         }
 
         private static bool NameIsSame(PropertyInfo property, string name)
@@ -210,28 +252,34 @@ namespace Utils
             return null;
         }
 
-        public virtual bool TryMapProperty(string name, Type destType, out object value)
+        public virtual MappingResult TryMapProperty(PropertyInfo destPropertyInfo)
         {
-            value = null;
-            var prop = TryFindAppropriateProperty(name, SourceType);
-            if (prop == null)
-                return false;
 
-            return TypeHelpers.TryChangeObjectType(destType, prop.GetValue(Source), out value);
+            var srcProp = TryFindAppropriateProperty(destPropertyInfo.Name, SourceType);
+
+            if(srcProp==null)
+                return MappingResult.NotResolved;
+            var value = srcProp.GetValue(Source);
+
+            return MapProperty(destPropertyInfo, value);
         }
 
-        private bool ResolvePropertyMarkedSourcePropertyAttribute(string propertyName, Type propertyType, MapSourcePropertyAttribute srcPropMap, out object value)
+        private MappingResult ResolvePropertyMarkedSourcePropertyAttribute(PropertyInfo propInfo, MapSourcePropertyAttribute srcPropMap)
         {
             object propValue = null;
-            bool result = false;
+            MappingResult result = MappingResult.NotResolved;
 
             if (srcPropMap.Name != null && srcPropMap.Path != null)
-                throw new PropertyMappingException(DestType.FullName, propertyName, "Either Name or Path in the MapSourcePropertyAttribute should be set.");
+                throw new PropertyMappingException(DestType.FullName,propInfo.Name, "Either Name or Path in the MapSourcePropertyAttribute should be set.");
 
             if (!string.IsNullOrWhiteSpace(srcPropMap.Name))
             {
+                var srcProp = TryFindAppropriateProperty(srcPropMap.Name, SourceType);
 
-                result = TryMapProperty(srcPropMap.Name, propertyType, out propValue);
+                var value = srcProp.GetValue(Source);
+
+                return MapProperty(propInfo, value);
+
             }
             if (!string.IsNullOrWhiteSpace(srcPropMap.Path))
             {
@@ -251,15 +299,38 @@ namespace Utils
                     propValue = prop.GetValue(propValue);
                     if (propValue == null) break;
                 }
+            }
 
-                if (propValue != null)
+            if (propValue == null)
+            {
+                var sourceProp = TryFindAppropriateProperty(propInfo.Name, SourceType);
+                propValue = sourceProp.GetValue(Source);
+            }
+
+            if (propValue == null)
+                return MappingResult.NotResolved;
+            if (!string.IsNullOrWhiteSpace(srcPropMap.UseInitalizer))
+            {
+                try
                 {
-                    result = TypeHelpers.TryChangeObjectType(propertyType, propValue, out propValue);
+                    DestType.GetMethod(srcPropMap.UseInitalizer).Invoke(base.Instance, new[] {propValue});
+                    return MappingResult.Resolved;
                 }
+                catch (AmbiguousMatchException){}
+                catch (TargetException){}
+                catch (ArgumentException){}
+                catch (TargetInvocationException ){}
+                catch (TargetParameterCountException ){}
+                catch (MethodAccessException ){}
+                catch (InvalidOperationException ){}
+                catch (NotSupportedException) { }
+                return MappingResult.NotResolved;
+            }
 
-            } //UsingInitalizer
-            value = propValue;
-            return result;
+            if(TypeHelpers.TryChangeObjectType(propInfo.PropertyType, propValue, out propValue)){
+                return MapProperty(propInfo, propValue);
+            }
+            return MappingResult.NotResolved;
         }
     }
 }
