@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Utils.TypeMapping;
+using Utils.TypeMapping.TypeMappers;
 
 namespace Utils.Test
 {

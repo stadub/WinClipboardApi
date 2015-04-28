@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Utils.ServiceLocatorInfo;
+using Utils.TypeMapping;
 
 namespace Utils
 {
@@ -61,7 +62,7 @@ namespace Utils
             if (!mappingDictionary.ContainsKey(mappingKey))
                 throw new TypeNotResolvedException(sourceType.FullName, "Type mapping doesn't exist in the registry");
             var typeBuilder = mappingDictionary[mappingKey];
-            return typeBuilder.Map(source);
+            return typeBuilder.Map(source, destType);
         }
 
         public IEnumerable<TDest> ResolveDescendants<TDest>(object source)

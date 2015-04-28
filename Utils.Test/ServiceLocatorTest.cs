@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Utils.TypeMapping;
 
 namespace Utils.Test
 {
@@ -44,7 +45,7 @@ namespace Utils.Test
 
     class TestClassWInjectionCtor : ITestClass
     {
-        public TestClassWInjectionCtor([InjectValue()]IList<int> a) { }
+        public TestClassWInjectionCtor([ShoudlInject()]IList<int> a) { }
     }
     
     class TestClassWRetvalCtor : ITestClass
@@ -200,10 +201,22 @@ namespace Utils.Test
 
 
         [TestMethod]
-        public void ShouldResolveTestClassWInjectionCtor()
+        public void ShouldResolveTestClassWGenericInjectionCtor()
         {
             var locator = new ServiceLocator();
             locator.RegisterType<ITestClass, TestClassWGenericInjectionCtor>();
+            var list = new List<int>();
+            locator.RegisterInstance<IList<int>, List<int>>(list);
+
+            var reslut = locator.Resolve<ITestClass>();
+
+            Assert.IsNotNull(reslut);
+        }
+        [TestMethod]
+        public void ShouldResolveTestClassWInjectionCtor()
+        {
+            var locator = new ServiceLocator();
+            locator.RegisterType<ITestClass, TestClassWInjectionCtor>();
             var list = new List<int>();
             locator.RegisterInstance<IList<int>, List<int>>(list);
 

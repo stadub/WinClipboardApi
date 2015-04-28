@@ -1,45 +1,15 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Utils.ServiceLocatorInfo;
+using Utils.TypeMapping;
+using Utils.TypeMapping.TypeMappers;
 
 namespace Utils
 {
-    public interface ITypeMapper
-    {
-        object Map(object source);
-    }
-
-    public interface ITypeMapper<in TSource, out TDest> : ITypeMapper
-    {
-        TDest Map(TSource source);
-    }
-
-
-    public class MappingFunc<TSource, TDest> : ITypeMapper<TSource, TDest>
-    {
-        private readonly Func<TSource,TDest> mapper;
-
-        public MappingFunc(Func<TSource,TDest> mapper)
-        {
-            this.mapper = mapper;
-        }
-
-        object ITypeMapper.Map(object source)
-        {
-            return Map((TSource)source);
-        }
-
-        public TDest Map(TSource source)
-        {
-            return mapper(source);
-        }
-    }
-
-    public class TypeMapper<TSource, TDest> : ITypeMapper<TSource, TDest>
+    public class TypeMapper<TSource, TDest> : TypeMapperBase<TSource, TDest>
     {
         private readonly TypeBuilder baseBuilder;
         private readonly TypeBuilder mappingInfoStub;
@@ -74,7 +44,7 @@ namespace Utils
         }
 
 
-        public TDest Map(TSource source)
+        public override IOperationResult<TDest> TryMap(TSource source)
         {
             if (DestType.IsGenericType || DestType.IsGenericType)
                 throw new TypeNotSupportedException(DestType.FullName, "Generic types are not supported");
@@ -94,18 +64,16 @@ namespace Utils
             mapper.CallInitMethod(context);
 
             mapper.InjectTypeProperties(context);
-            
-            return (TDest)context.Instance;
+
+            return OperationResult.Successfull((TDest)context.Instance);
         }
+
+
 
         public Type DestType { get; private set; }
 
         public Type SourceType { get; private set; }
 
-        object ITypeMapper.Map(object source)
-        {
-            return Map((TSource)source);
-        }
     }
 
     public class MappingTypeBuilder : TypeBuilder
@@ -205,8 +173,10 @@ namespace Utils
             var prop = TryFindAppropriateProperty(paramInfo.Name, SourceType);
             if (prop != null)
             {
-                result= TypeHelpers.TryChangeObjectType(paramInfo.ParameterType, prop.GetValue(Source), out value);
-                
+                var converTypeMapper = new ConverTypeMapper();
+                var convertionResult = converTypeMapper.Map(prop.GetValue(Source), paramInfo.ParameterType);
+                value = convertionResult.Value;
+                result = convertionResult.Success;
             }
 
             return result || base.ResolveParameter(paramInfo,methodName, out value);
@@ -327,9 +297,13 @@ namespace Utils
                 return MappingResult.NotResolved;
             }
 
-            if(TypeHelpers.TryChangeObjectType(propInfo.PropertyType, propValue, out propValue)){
+            var converTypeMapper = new ConverTypeMapper();
+            var convertionResult = converTypeMapper.Map(propValue, propInfo.PropertyType);
+            if (convertionResult.Success)
+            {
                 return MapProperty(propInfo, propValue);
             }
+
             return MappingResult.NotResolved;
         }
     }

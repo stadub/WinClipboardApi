@@ -2,9 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Permissions;
+using Utils.TypeMapping;
+using Utils.TypeMapping.TypeMappers;
+using Utils.TypeMapping.ValueResolvers;
 
 namespace Utils
 {
+    public interface IPropertyMapper
+    {
+        bool MapPropery(PropertyInfo property,object instance);
+    }
+
+
     public abstract class TypeBuilder
     {
         public const string CtorParamName = "[ctor]";
@@ -93,7 +103,7 @@ namespace Utils
                 if (!paramValueInjected)
                 {
                     //Inject parametr value from Inject Attribute
-                    paramValueInjected = InjectParameterValue(paramDef, out paramValue);
+                    paramValueInjected = InjectParameterValue(paramDef, out paramValue, context);
                 }
 
                 if (!paramValueInjected)
@@ -119,30 +129,37 @@ namespace Utils
             return false;
         }
 
-        protected virtual bool InjectParameterValue(ParameterInfo paramInfo, out object value)
+        protected virtual bool InjectParameterValue(ParameterInfo paramInfo, out object value, TypeBuilerContext context)
         {
             value = null;
-            if (!paramInfo.CustomAttributes.Any(FilterInjectValue))
-                return false;
-
             var parametrType = paramInfo.ParameterType;
-            var attribute = paramInfo.GetCustomAttribute<InjectValueAttribute>();
-            if (attribute.Value != null)
+
+            var valueInjector = new ValueInjector();
+
+            if (valueInjector.IsMemberSuitable(paramInfo))
             {
-                var convertedType = Convert.ChangeType(attribute.Value, parametrType);
-                value = convertedType;
+                var source = valueInjector.ResolveSourceValue(paramInfo);
+                if (source.Success)
+                {
+                    var convertedType = Convert.ChangeType(source.Value, parametrType);
+                    value = convertedType;
+                    return true;
+                }
+            }
+
+            var inject = paramInfo.GetCustomAttribute<ShoudlInjectAttribute>();
+            if (inject != null)
+            {
+                context.ResolveParameter(paramInfo, string.Empty, out value);
                 return true;
             }
+
             return false;
         }
 
 
 
-        protected static bool FilterInjectValue(CustomAttributeData field)
-        {
-            //declare property/ctor parametr filter signature
-            return field.AttributeType.IsAssignableFrom(typeof(InjectValueAttribute));
-        }
+
 
         protected static bool FilterInjectNamedInstance(CustomAttributeData field)
         {
@@ -209,27 +226,30 @@ namespace Utils
 
             //resolving injection properties, that doesn't registered in the "PropertyInjections"
             var propsToInjectValue = DestType.GetProperties()
-                .Where(x => x.CustomAttributes.Any(FilterInjectValue) && !resolvedProperties.Contains(x));
+                .Where(x => !resolvedProperties.Contains(x));
 
             foreach (var prop in propsToInjectValue)
             {
-                var inject = prop.GetCustomAttribute<InjectValueAttribute>();
-                if (inject.Value != null)
+                var valueInjector = new ValueInjector();
+
+                if (valueInjector.IsMemberSuitable(prop))
                 {
-                    if (!prop.PropertyType.IsInstanceOfType(inject.Value))
+                    var source = valueInjector.ResolveSourceValue(prop);
+                    if (source.Success)
                     {
-                        var convertedValue = Convert.ChangeType(inject.Value, prop.PropertyType);
-                        prop.SetValue(instance, convertedValue);
-                    }
-                    else
-                        prop.SetValue(instance, inject.Value);
-                    resolvedProperties.Add(prop);
+                        context.MapProperty(prop, source.Value);
+                        resolvedProperties.Add(prop);
+                        continue;
+                    }                    
                 }
-                else
+
+                var inject=prop.GetCustomAttribute<ShoudlInjectAttribute>();
+                if (inject != null)
                 {
                     context.ResolvePropertyValueInjection(prop, string.Empty);
+                    resolvedProperties.Add(prop);
                 }
-                
+
             }
 
             var propsToInject = DestType.GetProperties()
@@ -281,7 +301,9 @@ namespace Utils
 
     public abstract class TypeBuilerContext
     {
+
         private Dictionary<PropertyInfo, ITypeMapper> properyMappers;
+        private List<ITypeMapper> typeMappers= new List<ITypeMapper>(); 
         public IList<PropertyInfo> ResolvedProperties { get; private set; }
         public object Instance { get; set; }
         public Type DestType { get; private set; }
@@ -291,6 +313,13 @@ namespace Utils
             DestType = destType;
             this.properyMappers = properyMappers;
             ResolvedProperties = new List<PropertyInfo>();
+
+            RegisterTypeMapper(new ConverTypeMapper());
+        }
+
+        protected void RegisterTypeMapper(ITypeMapper typeMapper)
+        {
+            typeMappers.Add(typeMapper);
         }
 
         public abstract MappingResult ResolvePropertyInjectionByResolver(PropertyInfo propInfo, string name);
@@ -306,21 +335,36 @@ namespace Utils
         public abstract bool ResolveParameter(ParameterInfo paramInfo, string methodName, out object value);
 
 
-        protected MappingResult MapProperty(PropertyInfo propertyInfo, object value)
+        public MappingResult MapProperty(PropertyInfo propertyInfo, object value)
         {
             if(properyMappers.ContainsKey(propertyInfo))
             {
-                var conversionResult=properyMappers[propertyInfo].Map(value);
-                propertyInfo.SetValue(Instance, conversionResult);
-                ResolvedProperties.Add(propertyInfo);
-                return MappingResult.Resolved;
+                var conversionResult=properyMappers[propertyInfo].Map(value,propertyInfo.PropertyType);
+                if (conversionResult.Success)
+                {
+                    propertyInfo.SetValue(Instance, conversionResult.Value);
+                    ResolvedProperties.Add(propertyInfo);
+                    return MappingResult.Resolved;
+                }
+
             }
-            if (TypeHelpers.TryChangeObjectType(propertyInfo.PropertyType, value, out value))
-            {
-                propertyInfo.SetValue(Instance, value);
-                ResolvedProperties.Add(propertyInfo);
-                return MappingResult.Resolved;
+
+            var valueMappers = typeMappers.ToArray();
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            // ReSharper disable once ForCanBeConvertedToForeach
+            for (int i = 0; i < valueMappers.Length; i++)
+            {    
+                var typeMapper = valueMappers[i];
+                var mappingResult = typeMapper.Map(value,propertyInfo.PropertyType);
+                if (mappingResult.Success)
+                {
+                    propertyInfo.SetValue(Instance, value);
+                    ResolvedProperties.Add(propertyInfo);
+                    return MappingResult.Resolved;
+                }
             }
+
             return MappingResult.NotResolved;
         }
     }

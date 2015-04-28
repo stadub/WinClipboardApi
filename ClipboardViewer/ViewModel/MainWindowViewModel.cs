@@ -9,6 +9,7 @@ using ClipboardHelper;
 using ClipboardHelper.FormatProviders;
 using ClipboardHelper.Watcher;
 using Utils;
+using Utils.TypeMapping;
 using Utils.Wpf.MvvmBase;
 
 namespace ClipboardViewer.ViewModel

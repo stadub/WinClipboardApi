@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utils.TypeMapping.TypeMappers;
 
 namespace Utils
 {
@@ -19,34 +20,7 @@ namespace Utils
             return null;
         }
 
-        public static bool TryChangeObjectType(Type destType, object sourceValue, out object value)
-        {
-            value = null;
-            if (!destType.IsInstanceOfType(sourceValue))
-            {
-                if (sourceValue == null)
-                    return true;
-
-                try
-                {
-                    var convertedValue = Convert.ChangeType(sourceValue, destType);
-                    value = convertedValue;
-                    return true;
-                }
-                catch (InvalidCastException)
-                {
-                }
-                catch (FormatException)
-                {
-                }
-                catch (OverflowException)
-                {
-                }
-                return false;
-            }
-            value = sourceValue;
-            return true;
-        }
+        
 
         public static void SetPropertyValue(PropertyInfo property, object instance, string value)
         {
@@ -60,10 +34,12 @@ namespace Utils
                 property.SetValue(instance, value);
                 return;
             }
-            object convertedValue = null;
-            if (TryChangeObjectType(propertyType, value, out convertedValue))
+
+            var converTypeMapper= new ConverTypeMapper();
+            var convertionResult = converTypeMapper.Map(value,propertyType);
+            if (convertionResult.Success)
             {
-                property.SetValue(instance, convertedValue);
+                property.SetValue(instance, convertionResult.Value);
             }
             //Throws MissingMethodException if corresponding constructor not found
             var propValue = Activator.CreateInstance(propertyType, value);

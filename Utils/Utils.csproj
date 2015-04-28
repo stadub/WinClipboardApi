@@ -39,21 +39,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ArrayTypeMapper.cs" />
-    <Compile Include="AsyncResultBase.cs" />
-    <Compile Include="Enumerable.cs" />
-    <Compile Include="ExceptionHelpers.cs" />
-    <Compile Include="GenericEventArgs.cs" />
+    <Compile Include="Helpers\Debugger.cs" />
+    <Compile Include="TypeMapping\TypeMappers\MappingFunc.cs" />
+    <Compile Include="TypeMapping\TypeMappers\ArrayTypeMapper.cs" />
+    <Compile Include="Helpers\AsyncResultBase.cs" />
+    <Compile Include="TypeMapping\TypeMappers\ConverTypeMapper.cs" />
+    <Compile Include="Helpers\Enumerable.cs" />
+    <Compile Include="Helpers\ExceptionHelpers.cs" />
+    <Compile Include="Helpers\GenericEventArgs.cs" />
+    <Compile Include="Helpers\OperationResult.cs" />
     <Compile Include="ServiceLocatorInfo\LocatorTypeBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceLocator.cs" />
     <Compile Include="ServiceLocatorInfo\LocatorRegistrationInfo.cs" />
     <Compile Include="TypeBuilder.cs" />
-    <Compile Include="Strings.cs" />
+    <Compile Include="Helpers\Strings.cs" />
     <Compile Include="TypeHelpers.cs" />
     <Compile Include="TypeMapper.cs" />
     <Compile Include="TypeMapperRegistry.cs" />
+    <Compile Include="TypeMapping\Attributes.cs" />
+    <Compile Include="TypeMapping\Interfaces.cs" />
+    <Compile Include="TypeMapping\TypeMappers\TypeMapperBase.cs" />
+    <Compile Include="TypeMapping\ValueResolvers\SourceMappingResolverBase.cs" />
+    <Compile Include="TypeMapping\ValueResolvers\ValueInjector.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
