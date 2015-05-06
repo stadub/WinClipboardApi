@@ -7,19 +7,22 @@ using Utils.TypeMapping.ValueResolvers;
 
 namespace Utils.TypeMapping.TypeBuilders
 {
-
     public class TypeBuilder<T> : TypeBuilder
     {
         private readonly PropertyRegistrationInfo<T> registrationInfo;
 
-        public TypeBuilder() : this(new PropertyRegistrationInfo<T>())
+        public new TypeBuilerContext<T> Context { get; set; }
+
+        public TypeBuilder()
+            : base(typeof(T))
         {
+            registrationInfo = new PropertyRegistrationInfo<T>();
         }
 
-        public TypeBuilder(PropertyRegistrationInfo<T> registrationInfo):base(typeof(T))
+        public TypeBuilder(PropertyRegistrationInfo<T> registrationInfo)
+            : base(typeof(T))
         {
             this.registrationInfo = registrationInfo;
-            RegisterSourceResolver(registrationInfo.ValueResolver);
         }
 
         public IPropertyRegistrationInfo<T> RegistrationInfo
@@ -27,15 +30,15 @@ namespace Utils.TypeMapping.TypeBuilders
             get { return registrationInfo; }
         }
 
-        public override void InitBuildingContext(TypeBuilerContext context)
+        public override void InitBuildingContext()
         {
-            registrationInfo.IgnoredProperties.ForEach(context.IgnoreProperties.Add);
-            
+            registrationInfo.IgnoredProperties.ForEach(Context.IgnoreProperties.Add);
+            RegisterSourceResolver(registrationInfo.ValueResolver);
         }
 
-        public override TypeBuilerContext CreateBuildingContext()
+        public override void CreateBuildingContext()
         {
-            return new TypeBuilerContext<T>();
+            base.Context = new TypeBuilerContext<T>();
         }
     }
 
@@ -45,10 +48,12 @@ namespace Utils.TypeMapping.TypeBuilders
         public Type DestType { get; private set; }
         public List<MethodInfo> InitMethods { get; private set; }
 
+        public TypeBuilerContext Context { get; protected set; }
+
         protected TypeBuilder(Type destType)
         {
             DestType = destType;
-            InitMethods=new List<MethodInfo>();
+            InitMethods = new List<MethodInfo>();
 
             RegisterSourceResolver(new InjectValueResolver());
             RegisterSourceResolver(new OptionalParameterResolver());
@@ -64,10 +69,10 @@ namespace Utils.TypeMapping.TypeBuilders
         {
             sourceResolvers.Add(typeMapper);
         }
-        
+
         public void RegisterPriorSourceResolver(ISourceMappingResolver typeMapper)
         {
-            sourceResolvers.Insert(0,typeMapper);
+            sourceResolvers.Add(typeMapper);
         }
 
         private List<ISourceMappingResolver> propertyMapper = new List<ISourceMappingResolver>();
@@ -82,18 +87,18 @@ namespace Utils.TypeMapping.TypeBuilders
             return TypeHelpers.GetConstructor(DestType);
         }
 
-        public void CreateInstance(ConstructorInfo ctor, string destTypeName, TypeBuilerContext context)
+        public void CreateInstance(ConstructorInfo ctor, string destTypeName)
         {
             //resolving constructor parametrs
             var paramsDef = ctor.GetParameters();
-            var paramValues = ResolvePramValues(paramsDef, CtorParamName, destTypeName, context);
-            context.Instance = ctor.Invoke(paramValues.ToArray());
+            var paramValues = ResolvePramValues(paramsDef, CtorParamName, destTypeName);
+            Context.Instance = ctor.Invoke(paramValues.ToArray());
         }
 
-        protected object[] ResolvePramValues(IList<ParameterInfo> paramsDef, string methodName,string destTypeName, TypeBuilerContext context)
+        protected object[] ResolvePramValues(IList<ParameterInfo> paramsDef, string methodName, string destTypeName)
         {
             if (paramsDef.Count == 0)
-                context.Instance = Activator.CreateInstance(context.DestType);
+                Context.Instance = Activator.CreateInstance(Context.DestType);
 
             var paramValues = new List<object>();
             foreach (ParameterInfo paramDef in paramsDef)
@@ -104,7 +109,7 @@ namespace Utils.TypeMapping.TypeBuilders
                     throw new TypeNotSupportedException(destTypeName, "Constructors/Methods with Out and Ref Attributes are not supported");
                 }
 
-                var paramResolution = ResolveParameterValue(paramDef,context);
+                var paramResolution = ResolveParameterValue(paramDef);
                 if (paramResolution.Success)
                     paramValues.Add(paramResolution.Value);
                 else
@@ -113,13 +118,13 @@ namespace Utils.TypeMapping.TypeBuilders
             return paramValues.ToArray();
         }
 
-        private OperationResult ResolveParameterValue(ParameterInfo paramDef,TypeBuilerContext context)
+        private OperationResult ResolveParameterValue(ParameterInfo paramDef)
         {
             foreach (var sourceResolver in sourceResolvers)
             {
                 if (sourceResolver.IsMemberSuitable(paramDef))
                 {
-                    var sourceValue = GetValue(sourceResolver, paramDef, context);
+                    var sourceValue = GetValue(sourceResolver, paramDef);
                     if (sourceValue.Success)
                     {
                         return sourceValue;
@@ -140,45 +145,45 @@ namespace Utils.TypeMapping.TypeBuilders
             return props;
         }
 
-        public virtual TypeBuilerContext CreateBuildingContext()
+        public virtual void CreateBuildingContext()
         {
-            var builderContext= new TypeBuilerContext(DestType);
-            return builderContext;
+            Context = new TypeBuilerContext(DestType);
+            InitBuildingContext();
         }
 
-        public abstract void InitBuildingContext(TypeBuilerContext context);
+        public abstract void InitBuildingContext();
 
-        public virtual void InjectTypeProperties(TypeBuilerContext context)
+        public virtual void InjectTypeProperties()
         {
-            var resolvedProperties = context.ResolvedProperties;
+            var resolvedProperties = Context.ResolvedProperties;
 
             //resolving injection properties, that wheren't registered in the "PropertyInjections"
             var propsToInjectValue = DestType.GetProperties()
-                .Where(x => !resolvedProperties.Contains(x)).ToArray();
+                .Where(x => !resolvedProperties.Contains(x));
 
             foreach (var prop in propsToInjectValue)
             {
                 var propKey = BuilderUtils.GetKey(prop);
                 //mark ignored propertieswas resolved
-                if (context.IgnoreProperties.Contains(propKey))
+                if (Context.IgnoreProperties.Contains(propKey))
                 {
                     resolvedProperties.Add(prop);
                     continue;
                 }
 
-                var resolutionResult = ResolvePropertyValue(prop, context);
+                var resolutionResult = ResolvePropertyValue(prop);
                 if (resolutionResult.Success)
-                    context.MapProperty(prop, resolutionResult.Value);
+                    Context.MapProperty(prop, resolutionResult.Value);
             }
         }
 
-        private OperationResult ResolvePropertyValue(PropertyInfo propertyInfo, TypeBuilerContext context)
+        private OperationResult ResolvePropertyValue(PropertyInfo propertyInfo)
         {
             foreach (var sourceResolver in sourceResolvers)
             {
                 if (sourceResolver.IsMemberSuitable(propertyInfo))
                 {
-                    var sourceValue = GetValue(sourceResolver, propertyInfo, context);
+                    var sourceValue = GetValue(sourceResolver, propertyInfo);
                     if (sourceValue.Success)
                     {
                         return sourceValue;
@@ -188,32 +193,32 @@ namespace Utils.TypeMapping.TypeBuilders
             return OperationResult.Failed();
         }
 
-        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo, TypeBuilerContext context)
+        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, null);
         }
 
-        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo propertyInfo, TypeBuilerContext context)
+        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, null);
         }
 
-        public void CallInitMethods(TypeBuilerContext context)
+        public void CallInitMethods()
         {
             foreach (var method in InitMethods)
-	        {
+            {
                 var paramsDef = method.GetParameters();
-                var paramValues = ResolvePramValues(paramsDef, method.Name, context.DestType.FullName, context);
-                method.Invoke(context.Instance,paramValues.ToArray());
-	        }
+                var paramValues = ResolvePramValues(paramsDef, method.Name, Context.DestType.FullName);
+                method.Invoke(Context.Instance, paramValues.ToArray());
+            }
         }
     }
 
     public enum MappingResult
     {
-        NotResolved=0,
-        Resolved=1
+        NotResolved = 0,
+        Resolved = 1
     }
-   
+
 
 }

@@ -121,12 +121,12 @@ namespace Utils.Test
                     RegisterSourceResolver(injectResolver);
             }
 
-            public override TypeBuilerContext CreateBuildingContext()
+            public override void CreateBuildingContext()
             {
-                return new TestTypeBuilerContext<TSource, TDest>();
+                base.Context= new TestTypeBuilerContext<TSource, TDest>();
             }
 
-            public override void InitBuildingContext(TypeBuilerContext context)
+            public override void InitBuildingContext()
             {
                 
             }

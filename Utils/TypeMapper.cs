@@ -69,15 +69,15 @@ namespace Utils
 
             var ctor = mapper.GetConstructor();
 
-            var context = (TypeMapperContext<TSource, TDest>)mapper.CreateBuildingContext();
-            mapper.InitBuildingContext(context);
-            context.Source = source;
-            mapper.CreateInstance(ctor, DestType.FullName, context);
-            mapper.CallInitMethods(context);
+            mapper.CreateBuildingContext();
+            mapper.InitBuildingContext();
+            mapper.Context.Source = source;
+            mapper.CreateInstance(ctor, DestType.FullName);
+            mapper.CallInitMethods();
 
-            mapper.InjectTypeProperties(context);
+            mapper.InjectTypeProperties();
 
-            return OperationResult<TDest>.Successful(context.Instance);
+            return OperationResult<TDest>.Successful(mapper.Context.Instance);
         }
 
         protected virtual MappingTypeBuilder<TSource, TDest> CreateTypeBuilder()
@@ -133,7 +133,13 @@ namespace Utils
 
         public IList<KeyValuePair<Expression, ITypeMapper>> PropertyMappings { get; set; }
 
-        public override TypeBuilerContext CreateBuildingContext()
+        public new TypeMapperContext<TSource, TDest> Context
+        {
+            get { return (TypeMapperContext<TSource, TDest>) base.Context; }
+            set { base.Context = value; }
+        }
+
+        public override void CreateBuildingContext()
         {
             var properyMappers= new Dictionary<PropertyInfo, ITypeMapper>();
             foreach (var propertyMapping in PropertyMappings)
@@ -141,21 +147,18 @@ namespace Utils
                 var propInfo = TypeHelpers.GetPropertyInfo(propertyMapping.Key);
                 properyMappers.Add(propInfo,propertyMapping.Value);
             }
-
-            return new TypeMapperContext<TSource, TDest>(properyMappers);
+            base.Context= new TypeMapperContext<TSource, TDest>(properyMappers);
         }
 
 
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo, TypeBuilerContext context)
+        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
         {
-            var mapperContext =(TypeMapperContext<TSource, TDest>)context;
-            return sourceMappingResolver.ResolveSourceValue(propertyInfo, mapperContext.Source);
+            return sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
         }
 
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo, TypeBuilerContext context)
+        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo)
         {
-            var mapperContext =(TypeMapperContext<TSource, TDest>)context;
-            return sourceMappingResolver.ResolveSourceValue(parameterInfo, mapperContext.Source);
+            return sourceMappingResolver.ResolveSourceValue(parameterInfo, Context.Source);
         }
     }
 
@@ -166,5 +169,6 @@ namespace Utils
         }
 
         public TSource Source { get; set; }
+        
     }
 }

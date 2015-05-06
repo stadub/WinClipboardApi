@@ -222,17 +222,17 @@ namespace Utils
 
             var ctor = TypeHelpers.TryGetConstructor(registration.DestType);
 
-            var context = registration.CreateBuildingContext();
-            registration.InitBuildingContext(context);
+            registration.CreateBuildingContext();
+            registration.InitBuildingContext();
             //value types have no default constructor and should be initalized by default value
             if (ctor == null && registration.DestType.IsValueType)
                 value = TypeHelpers.GetDefault(registration.DestType);
             else
             {
-                registration.CreateInstance(ctor, type.FullName, context);
-                value = context.Instance;
+                registration.CreateInstance(ctor, type.FullName);
+                value = registration.Context.Instance;
             }
-            registration.InjectTypeProperties(context);
+            registration.InjectTypeProperties();
             return true;
         }     
 

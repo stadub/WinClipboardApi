@@ -30,12 +30,12 @@ namespace Utils.TypeMapping.TypeBuilders
             RegisterSourceResolver(new LocatorValueInjector(serviceLocator){InjectOnlyFlaggedProperties = true});
         }
 
-        public override TypeBuilerContext CreateBuildingContext()
+        public override void CreateBuildingContext()
         {
-            return new TypeBuilerContext(DestType);
+            base.Context= new TypeBuilerContext<T>();
         }
 
-        public override void InitBuildingContext(TypeBuilerContext context)
+        public void InitBuildingContext(TypeBuilerContext context)
         {
             
         }
