@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Utils.TypeMapping;
+using Utils.TypeMapping.MappingInfo;
+using Utils.TypeMapping.TypeBuilders;
 using Utils.TypeMapping.TypeMappers;
+using Utils.TypeMapping.ValueResolvers;
 
 namespace Utils.Test
 {
@@ -28,9 +31,9 @@ namespace Utils.Test
         {
             public ClassWithSourceCtor(ClassW2Properties source)
             {
-                this.Source = source;
+                Source = source;
             }
-            public ClassW2Properties Source { get; set; }
+            public ClassW2Properties Source { get; private set; }
         }
 
 
@@ -38,7 +41,7 @@ namespace Utils.Test
         {
             public ClassWithSourceProp(int prop2)
             {
-                this.Prop2 = prop2;
+                Prop2 = prop2;
             }
 
             public int Prop2 { get; private set; }
@@ -73,7 +76,7 @@ namespace Utils.Test
 
         class ClassWSourcePropertyInitalizer
         {
-            [MapSourceProperty(UseInitalizer = "InitProp")]
+            [UseInitalizer(Name = "InitProp")]
             public int Prop { get; private set; }
 
             public void InitProp(int value)
@@ -84,7 +87,7 @@ namespace Utils.Test
 
         class ClassWSourcePropertyInitalizerAndPropertyPath
         {
-            [MapSourceProperty(Path = "Source.Prop2", UseInitalizer = "InitProp")]
+            [MapSourceProperty(Path = "Source.Prop2")] [UseInitalizer(Name = "InitProp")]
             public int Prop { get; private set; }
 
             public void InitProp(int value)
@@ -93,39 +96,84 @@ namespace Utils.Test
             }
         }
 
-        class TestTypeBuilder : TypeBuilderStub
+        class TestTypeBuilder<TSource, TDest> : MappingTypeBuilder<TSource, TDest>
         {
-            public PropertyInfo PropertyToResolve { get; set; }
-            public object ProertyValue { get; set; }
-            public TestTypeBuilder(Type destType)
-                : base(destType)
+            public PropertyInfo PropertyToResolve
             {
+                get { return injectResolver.PropertyToResolve; }
+                set { injectResolver.PropertyToResolve = value; }
+            }
+
+            public object ProertyValue
+            {
+                get { return injectResolver.ProertyValue; }
+                set { injectResolver.ProertyValue=value; }
+            }
+
+            private TestInjectValueResolver injectResolver;
+
+            public TestTypeBuilder(bool priorResolver=false): base()
+            {
+                injectResolver = new TestInjectValueResolver();
+                if (priorResolver)
+                    RegisterPriorSourceResolver(injectResolver);
+                else
+                    RegisterSourceResolver(injectResolver);
             }
 
             public override TypeBuilerContext CreateBuildingContext()
             {
-                return new TestTypeBuilerContext(DestType) { PropertyToResolve = PropertyToResolve, ProertyValue = ProertyValue };
+                return new TestTypeBuilerContext<TSource, TDest>();
+            }
+
+            public override void InitBuildingContext(TypeBuilerContext context)
+            {
+                
             }
         }
 
-        class TestTypeBuilerContext : TypeBuilerContextStub
+        class TestTypeBuilerContext<TSource, TDest> : TypeMapperContext<TSource, TDest> 
         {
-            public TestTypeBuilerContext(Type destType): base(destType,new Dictionary<PropertyInfo, ITypeMapper>()){}
+            public TestTypeBuilerContext(): base(new Dictionary<PropertyInfo, ITypeMapper>()){}
+        }
 
+        class TestInjectValueResolver : SourceMappingResolverBase
+        {
             public PropertyInfo PropertyToResolve { get; set; }
             public object ProertyValue { get; set; }
-            public override MappingResult ResolvePublicNotIndexedProperty(PropertyInfo property)
+
+            protected override bool IsMemberSuitable(BuilderMemberInfo memberInfo)
             {
-                if (property == PropertyToResolve)
+                return PropertyToResolve.Name == memberInfo.Name;
+            }
+
+            protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+            {
+                if (PropertyToResolve.Name == memberInfo.Name)
                 {
-                    return MapProperty(property, ProertyValue);
+                    return OperationResult.Successful(ProertyValue);
                 }
-                return base.ResolvePublicNotIndexedProperty(property);
+                return OperationResult.Failed();
+            }
+
+        }
+
+        class TestTypeMapper<TSource, TDest> : TypeMapper<TSource, TDest>
+        {
+            private readonly Func<TestTypeBuilder<TSource, TDest>> createBuilderFunc;
+
+            public TestTypeMapper(Func<TestTypeBuilder<TSource, TDest>> createBuilderFunc)
+            {
+                this.createBuilderFunc = createBuilderFunc;
+            }
+
+            protected override MappingTypeBuilder<TSource, TDest> CreateTypeBuilder()
+            {
+                return createBuilderFunc();
             }
 
 
         }
-
         #endregion TestClasses
 
         [TestMethod]
@@ -163,7 +211,7 @@ namespace Utils.Test
         public void ShouldInjectPropertyValue()
         {
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
-            mapper.MappingInfo.InjectPropertyValue(cl => cl.Prop3,3);
+            mapper.RegistrationInfo.InjectPropertyValue(cl => cl.Prop3,3);
             var source = new ClassW2Properties();
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
@@ -175,7 +223,7 @@ namespace Utils.Test
         {
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>();
 
-            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
+            mapper.RegistrationInfo.IgnoreProperty(cl => cl.Prop);
             var source = new ClassW2Properties{ Prop = 1,Prop2 = 2};
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
@@ -187,11 +235,11 @@ namespace Utils.Test
         public void ShouldResolvePropertySetByBaseResolver()
         {
             var destType = typeof (ClassW4Properties);
-
-            var testBuilder = new TestTypeBuilder(destType);
+            var testBuilder = new TestTypeBuilder<ClassW2Properties,ClassW4Properties>();
             testBuilder.PropertyToResolve = destType.GetProperty("Prop3");
             testBuilder.ProertyValue = 3;
-            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(testBuilder);
+
+            var mapper = new TestTypeMapper<ClassW2Properties, ClassW4Properties>(() => testBuilder);
             var source = new ClassW2Properties();
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
@@ -202,10 +250,26 @@ namespace Utils.Test
         public void ShouldUserTopLevelBuilder()
         {
             var destType = typeof(ClassW4Properties);
-            var testBuilder = new TestTypeBuilder(destType);
+            var testBuilder = new TestTypeBuilder<ClassW2Properties, ClassW4Properties>();
             testBuilder.PropertyToResolve = destType.GetProperty("Prop2");
             testBuilder.ProertyValue = 3;
-            var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(testBuilder);
+
+            var mapper = new TestTypeMapper<ClassW2Properties, ClassW4Properties>(() => testBuilder);
+            var source = new ClassW2Properties { Prop2 = 2 };
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(2, dest.Prop2);
+        }
+        
+        [TestMethod]
+        public void ShouldUserPriorBuilder()
+        {
+            var destType = typeof(ClassW4Properties);
+            var testBuilder = new TestTypeBuilder<ClassW2Properties, ClassW4Properties>();
+            testBuilder.PropertyToResolve = destType.GetProperty("Prop2");
+            testBuilder.ProertyValue = 3;
+
+            var mapper = new TestTypeMapper<ClassW2Properties, ClassW4Properties>(() => testBuilder);
             var source = new ClassW2Properties { Prop2 = 2 };
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
@@ -225,7 +289,7 @@ namespace Utils.Test
 
             var mapper = new TypeMapper<ClassW2Properties, ClassW4Properties>(locator);
 
-            mapper.MappingInfo.IgnoreProperty(cl => cl.Prop);
+            mapper.RegistrationInfo.IgnoreProperty(cl => cl.Prop);
             mapper.LocatorMappingInfo.InjectProperty(properties => properties.Prop4);
 
             var source = new ClassW2Properties { Prop2 = 2 };

@@ -1,22 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Utils.ServiceLocatorInfo;
-using Utils.TypeMapping;
+using Utils.TypeMapping.MappingInfo;
 
-namespace Utils
+namespace Utils.TypeMapping
 {
-    public interface ITypeMapperRegistry
-    {
-        IPropertyRegistrationInfo<TDest> Register<TSource, TDest>();
-        void Register<TSource, TDest>(ITypeMapper mapper);
-
-        object Resolve(object source, Type destType);
-        TDest Resolve<TDest>(object source);
-
-        IEnumerable<TDest> ResolveDescendants<TDest>(object source);
-        IEnumerable<object> ResolveDescendants(object source, Type destType);
-    }
 
     public class TypeMapperRegistry : ITypeMapperRegistry
     {
@@ -33,7 +21,7 @@ namespace Utils
             var typeBuilder = new TypeMapper<TSource,TDest>();
             Register<TSource, TDest>(typeBuilder);
 
-            return typeBuilder.MappingInfo;
+            return typeBuilder.RegistrationInfo;
         }
 
         public void Register<TSource,TDest>(ITypeMapper mapper)
@@ -62,7 +50,8 @@ namespace Utils
             if (!mappingDictionary.ContainsKey(mappingKey))
                 throw new TypeNotResolvedException(sourceType.FullName, "Type mapping doesn't exist in the registry");
             var typeBuilder = mappingDictionary[mappingKey];
-            return typeBuilder.Map(source, destType);
+            var result= typeBuilder.Map(source, destType);
+            return result.Value;
         }
 
         public IEnumerable<TDest> ResolveDescendants<TDest>(object source)

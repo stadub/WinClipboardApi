@@ -10,7 +10,7 @@ namespace Utils.TypeMapping.TypeMappers
             var mappingResult = Map(sourceValue, destType);
 
             return mappingResult.Success
-                ? OperationResult.Successfull((TDest) mappingResult.Value)
+                ? OperationResult<TDest>.Successful((TDest)mappingResult.Value)
                 : OperationResult<TDest>.Failed(mappingResult.Error);
         }
 
@@ -27,26 +27,26 @@ namespace Utils.TypeMapping.TypeMappers
         public IOperationResult<object> Map(object source, Type destType)
         {
             if (source == null)
-                return OperationResult<object>.Failed();
+                return OperationResult.Failed();
 
-            if (destType.IsInstanceOfType(source)) return OperationResult.Successfull(source);
+            if (destType.IsInstanceOfType(source)) return OperationResult.Successful(source);
 
             try
             {
                 var convertedValue = Convert.ChangeType(source, destType);
-                return OperationResult.Successfull(convertedValue);
+                return OperationResult.Successful(convertedValue);
             }
             catch (InvalidCastException ex)
             {
-                return OperationResult<object>.Failed(ex);
+                return OperationResult.Failed(ex);
             }
             catch (FormatException ex)
             {
-                return OperationResult<object>.Failed(ex);
+                return OperationResult.Failed(ex);
             }
             catch (OverflowException ex)
             {
-                return OperationResult<object>.Failed(ex);
+                return OperationResult.Failed(ex);
             }
         }
 

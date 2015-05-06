@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
-using Utils.ServiceLocatorInfo;
+using Utils.TypeMapping.MappingInfo;
+using Utils.TypeMapping.TypeBuilders;
 
 namespace Utils
 {
+
     [DebuggerDisplay(
         "Id = {Id} [Inst:{registeredInstances.Count} Init:{registeredInitializers.Count} T:{registeredTypes.Count}]"
         //+"{{Instances = {registeredInstances.Count} " //+
@@ -24,17 +26,17 @@ namespace Utils
             Interlocked.Increment(ref _curId);
         }
         //may be in future type key should changed from <Type, Name> to <TypeName, Name> to reduce memory usage
-        protected Dictionary<KeyValuePair<String, string>, object> registeredInstances = new Dictionary<KeyValuePair<String, string>, object>();
-        protected Dictionary<KeyValuePair<String, string>, object> registeredInitializers = new Dictionary<KeyValuePair<String, string>, object>();
-        private Dictionary<KeyValuePair<String, string>, TypeBuilder> registeredTypes = new Dictionary<KeyValuePair<String, string>, TypeBuilder>();
+        protected ConcurrentDictionary<KeyValuePair<String, string>, object> registeredInstances = new ConcurrentDictionary<KeyValuePair<String, string>, object>();
+        protected ConcurrentDictionary<KeyValuePair<String, string>, object> registeredInitializers = new ConcurrentDictionary<KeyValuePair<String, string>, object>();
+        private ConcurrentDictionary<KeyValuePair<String, string>, TypeBuilder> registeredTypes = new ConcurrentDictionary<KeyValuePair<String, string>, TypeBuilder>();
 
         #region Register methods
-        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>() where TClass:TInterface
+        public ILocatorResolutionInfo<TClass> RegisterType<TInterface, TClass>() where TClass : TInterface
         {
             return RegisterType<TInterface, TClass>(string.Empty);
         }
 
-        public LocatorRegistrationInfo<TClass> RegisterType<TInterface, TClass>(string name) where TClass : TInterface
+        public ILocatorResolutionInfo<TClass> RegisterType<TInterface, TClass>(string name) where TClass : TInterface
         {
             var interfaceType = typeof(TInterface);
             var classType = typeof(TClass);
@@ -45,9 +47,16 @@ namespace Utils
             var key = GetKey(interfaceType, name);
             CheckDuplicated(key);
 
-            var registrationInfo = new LocatorTypeBuilder(this,classType);
-            registeredTypes.Add(key,registrationInfo);
-            return new LocatorRegistrationInfo<TClass>(registrationInfo);
+            var propRegistrationInfo = new PropertyRegistrationInfo<TClass>();
+
+            var typeBuilder = new LocatorTypeBuilder<TClass>(this, propRegistrationInfo);
+            registeredTypes.AddOrUpdate(key, typeBuilder,(pair, builder) => typeBuilder);
+
+            var registrationInfo = new LocatorRegistrationInfo<TClass>();
+
+            registrationInfo.PropertyInjectionResolvers = typeBuilder.PropertyResolvers;
+
+            return new LocatorResolutionInfo<TClass>(registrationInfo, propRegistrationInfo);
         }
 
         public void RegisterInitializer<TInterface>(Func<TInterface> typeResolver)
@@ -60,7 +69,7 @@ namespace Utils
             var interfaceType = typeof(TInterface);
             var key = GetKey(interfaceType, name);
             CheckDuplicated(key);
-            registeredInitializers.Add(new KeyValuePair<String, string>(interfaceType.FullName, name), typeResolver);
+            registeredInitializers.AddOrUpdate(key, typeResolver, (pair, o) => typeResolver);
         }
 
         public void RegisterInstance<TInterface, TValue>(TValue value, string name) where TValue : class, TInterface
@@ -104,7 +113,6 @@ namespace Utils
                 return result;
             throw new TypeNotResolvedException(type.FullName);
         }
-
 
         protected internal bool TryResolve(Type @type, string name, out object result)
         {
@@ -212,10 +220,11 @@ namespace Utils
             
             if (registration == null) throw new TypeNotResolvedException(type.FullName,"Cannot find type registration");
 
-            var ctor = registration.TryGetConstructor();
+            var ctor = TypeHelpers.TryGetConstructor(registration.DestType);
 
             var context = registration.CreateBuildingContext();
-            //value types have no default constructor and shpuld be initalized by default value
+            registration.InitBuildingContext(context);
+            //value types have no default constructor and should be initalized by default value
             if (ctor == null && registration.DestType.IsValueType)
                 value = TypeHelpers.GetDefault(registration.DestType);
             else

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Utils.TypeMapping.MappingInfo;
 
 namespace Utils.TypeMapping
 {
@@ -17,12 +18,29 @@ namespace Utils.TypeMapping
 
     public interface ISourceMappingResolver
     {
-        bool IsMemberSuitable(PropertyInfo mappingMember);
+        bool IsMemberSuitable(PropertyInfo propertyInfo);
         bool IsMemberSuitable(ParameterInfo mappingMember);
 
-        OperationResult<object> ResolveSourceValue(PropertyInfo mappingMember);
-        OperationResult<object> ResolveSourceValue(ParameterInfo mappingMember);
-        
+        OperationResult ResolveSourceValue(PropertyInfo propertyInfo, object source);
+        OperationResult ResolveSourceValue(ParameterInfo mappingMember, object source);
     }
+
+    public interface IPropertyMapper
+    {
+        bool MapPropery(ITypeMapper mapper, PropertyInfo property, object value, object instance);
+    }
+
+    public interface ITypeMapperRegistry
+    {
+        IPropertyRegistrationInfo<TDest> Register<TSource, TDest>();
+        void Register<TSource, TDest>(ITypeMapper mapper);
+
+        object Resolve(object source, Type destType);
+        TDest Resolve<TDest>(object source);
+
+        IEnumerable<TDest> ResolveDescendants<TDest>(object source);
+        IEnumerable<object> ResolveDescendants(object source, Type destType);
+    }
+
 
 }

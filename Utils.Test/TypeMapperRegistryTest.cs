@@ -1,5 +1,7 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Utils.TypeMapping;
+using Utils.TypeMapping.MappingInfo;
 
 namespace Utils.Test
 {
@@ -38,7 +40,7 @@ namespace Utils.Test
         {
             public ClassWithSourceCtor(ClassW2Properties source)
             {
-                this.Source = source;
+                Source = source;
             }
             public ClassW2Properties Source { get; set; }
         }

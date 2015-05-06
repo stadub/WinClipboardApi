@@ -19,7 +19,7 @@ namespace Utils.TypeMapping.TypeMappers
                 var mappingValue = elementMapper.TryMap(sourceItem);
                 list.Add(mappingValue.Value);
             }
-            return OperationResult.Successfull(list.ToArray());
+            return OperationResult<IList<TDest>>.Successful(list.ToArray());
         }
     }
 }

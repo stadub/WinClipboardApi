@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Utils.TypeMapping.TypeMappers;
@@ -20,7 +19,39 @@ namespace Utils
             return null;
         }
 
-        
+        public static ConstructorInfo TryGetConstructor(Type type)
+        {
+            //enumerating only public ctors
+            var ctors = type.GetConstructors();
+
+            //search for constructor marked as [UseConstructor]
+            foreach (var ctor in ctors)
+            {
+                var attributes = ctor.GetCustomAttributes(typeof(UseConstructorAttribute), false);
+                if (attributes.Any())
+                    return ctor;
+            }
+            //try to find default constructor
+            foreach (var ctor in ctors)
+            {
+                var args = ctor.GetParameters();
+                if (args.Length == 0)
+                    return ctor;
+            }
+            //try to use first public
+            if (ctors.Length > 0)
+                return ctors[0];
+            return null;
+        }
+
+        public static ConstructorInfo GetConstructor(Type type)
+        {
+            var ctor = TryGetConstructor(type);
+            if (ctor != null)
+                return ctor;
+            throw new ConstructorNotResolvedException(type.FullName);
+        }
+
 
         public static void SetPropertyValue(PropertyInfo property, object instance, string value)
         {
@@ -50,25 +81,17 @@ namespace Utils
         {
             var propertyValue = property.GetValue(instance);
 
-            var formated = property.GetCustomAttribute<FormatedAttribute>();
-            if (formated != null)
-            {
-                Debug.Assert(formated.Format != null);
-                var propertyConverter = (IFormattable)propertyValue;
-                var formatedString = propertyConverter.ToString(formated.Format, CultureInfo.InvariantCulture);
-                return formatedString;
-            }
+            var mapper= new FormatedStringMapper<object>();
+            var mapResult = mapper.TryMap(propertyValue);
+            if (mapResult.Success) 
+                return mapResult.Value;
             try
             {
-                var convertedValue = Convert.ChangeType(propertyValue, typeof(string));
-                return (string)convertedValue;
+                var convertedValue = Convert.ChangeType(propertyValue, typeof(string)).ToString();
+                return convertedValue;
             }
-            catch (InvalidCastException)
-            {
-            }
-
+            catch (InvalidCastException) { }
             return propertyValue.ToString();
-
         }
 
         public static PropertyInfo GetPropertyInfo<TClass, TProp>(Expression<Func<TClass, TProp>> poperty)
@@ -92,6 +115,8 @@ namespace Utils
                     throw new ArgumentException("Only property expression is alowed", "expression");
             }
         }
+
+
     }
     public class FormatedAttribute : Attribute
     {

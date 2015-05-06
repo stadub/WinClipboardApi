@@ -6,11 +6,10 @@ namespace Utils.TypeMapping.TypeMappers
     {
         private readonly Func<TSource,TDest> mapper;
 
-        public MappingFunc(Func<TSource,TDest> mapper)
+        public MappingFunc(Func<TSource, TDest> mapper)
         {
             this.mapper = mapper;
         }
-
 
         public override IOperationResult<TDest> TryMap(TSource source)
         {

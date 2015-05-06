@@ -21,7 +21,7 @@ namespace Utils.Test
 
         public object b;
         [UseConstructor()]
-        public TestClassWUseCtorAttribute(int a=2) { b = a; }
+        public TestClassWUseCtorAttribute(int a = 2) { b = a; }
 
         
     }
