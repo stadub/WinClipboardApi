@@ -25,7 +25,7 @@ namespace Utils.TypeMapping.PropertyMappers
                 if (parameters.Length != 1)
                     throw new ArgumentException("Only initalizers with single argument are supported.");
 
-                var paramType = parameters.GetType();
+                var paramType = parameters[0].ParameterType;
                 var mappingResult = mapper.Map(sourceValue, paramType);
                 if (mappingResult.Success)
                 {

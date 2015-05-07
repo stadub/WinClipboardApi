@@ -7,6 +7,10 @@ namespace Utils.TypeMapping.MappingInfo
     {
     }
 
+    public interface ITypeMappingInfo<TClass> : IPropertyMappingInfo<TClass>, IPropertyRegistrationInfo<TClass>
+    {
+    }
+
     public interface ILocatorRegistrationInfo<TClass>
     {
         void InjectProperty<TProp>(Expression<Func<TClass, TProp>> poperty);

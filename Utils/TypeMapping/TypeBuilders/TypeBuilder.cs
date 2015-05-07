@@ -11,7 +11,11 @@ namespace Utils.TypeMapping.TypeBuilders
     {
         private readonly PropertyRegistrationInfo<T> registrationInfo;
 
-        public new TypeBuilerContext<T> Context { get; set; }
+        public new TypeBuilerContext<T> Context
+        {
+            get { return (TypeBuilerContext<T>) base.Context; }
+            set { base.Context = value; }
+        }
 
         public TypeBuilder()
             : base(typeof(T))
@@ -159,7 +163,7 @@ namespace Utils.TypeMapping.TypeBuilders
 
             //resolving injection properties, that wheren't registered in the "PropertyInjections"
             var propsToInjectValue = DestType.GetProperties()
-                .Where(x => !resolvedProperties.Contains(x));
+                .Where(x => !resolvedProperties.Contains(x)).ToArray();
 
             foreach (var prop in propsToInjectValue)
             {
@@ -184,7 +188,7 @@ namespace Utils.TypeMapping.TypeBuilders
                 if (sourceResolver.IsMemberSuitable(propertyInfo))
                 {
                     var sourceValue = GetValue(sourceResolver, propertyInfo);
-                    if (sourceValue.Success)
+                    if (sourceValue.Success && sourceValue.Value!=null)
                     {
                         return sourceValue;
                     }

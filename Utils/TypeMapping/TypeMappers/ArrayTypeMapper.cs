@@ -22,4 +22,12 @@ namespace Utils.TypeMapping.TypeMappers
             return OperationResult<IList<TDest>>.Successful(list.ToArray());
         }
     }
+
+    public class ArrayTypeMapper
+    {
+        public static ArrayTypeMapper<TSource, TDest> Create<TSource, TDest>(ITypeMapper<TSource, TDest> elementMapper)
+        {
+            return new ArrayTypeMapper<TSource, TDest>(elementMapper);
+        }
+    }
 }

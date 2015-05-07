@@ -345,6 +345,19 @@ namespace Utils.Test
             Assert.IsTrue(dest.Prop == 2);
         }
         
+        [TestMethod]
+        public void ShouldNotMapNullValues()
+        {
+            var mapper = new TypeMapper<ClassW4Properties, ClassW4Properties>();
+            var source = new ClassW4Properties { Prop = 1, Prop2 = 2 };
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(1, dest.Prop);
+            Assert.AreEqual(2, dest.Prop2);
+            Assert.AreEqual(0, dest.Prop3);
+            Assert.AreEqual(null, dest.Prop4);
+        }
+        
         
         [TestMethod]
         public void ShouldMapProperyWArray()

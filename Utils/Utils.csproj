@@ -42,6 +42,7 @@
     <Compile Include="Helpers\Debugger.cs" />
     <Compile Include="TypeMapping\MappingInfo\Interfaces.cs" />
     <Compile Include="TypeMapping\MappingInfo\LocatorResolutionInfo.cs" />
+    <Compile Include="TypeMapping\MappingInfo\TypeMappingInfo.cs" />
     <Compile Include="TypeMapping\ValueResolvers\ServiceLocator\LocatorRegistrationInfoResolver.cs" />
     <Compile Include="TypeMapping\MappingInfo\PropertyRegistrationInfo.cs" />
     <Compile Include="TypeMapping\PropertyMappers\InitPropertyMapper.cs" />

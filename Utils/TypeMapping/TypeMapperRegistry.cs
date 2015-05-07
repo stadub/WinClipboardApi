@@ -16,12 +16,12 @@ namespace Utils.TypeMapping
             return new KeyValuePair<String, Type>(sourceType.FullName, destType);
         }
 
-        public IPropertyRegistrationInfo<TDest> Register<TSource, TDest>() 
+        public ITypeMappingInfo<TDest> Register<TSource, TDest>() 
         {
             var typeBuilder = new TypeMapper<TSource,TDest>();
             Register<TSource, TDest>(typeBuilder);
 
-            return typeBuilder.RegistrationInfo;
+            return new TypeMappingInfo<TDest>(typeBuilder.PropertyMappingInfo, typeBuilder.RegistrationInfo);
         }
 
         public void Register<TSource,TDest>(ITypeMapper mapper)

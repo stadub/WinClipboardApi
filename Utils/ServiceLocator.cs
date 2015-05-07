@@ -118,7 +118,7 @@ namespace Utils
         {
             if (TryResolveInstance(@type, name, out result))
                 return true;
-            if (TryResolveInitializer(@type, out result))
+            if (TryResolveInitializer(@type, name,out result))
                 return true;
             if (TryConstructType(@type, name, out result))
                 return true;

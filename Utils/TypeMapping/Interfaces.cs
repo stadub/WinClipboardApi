@@ -32,7 +32,7 @@ namespace Utils.TypeMapping
 
     public interface ITypeMapperRegistry
     {
-        IPropertyRegistrationInfo<TDest> Register<TSource, TDest>();
+        ITypeMappingInfo<TDest> Register<TSource, TDest>();
         void Register<TSource, TDest>(ITypeMapper mapper);
 
         object Resolve(object source, Type destType);
