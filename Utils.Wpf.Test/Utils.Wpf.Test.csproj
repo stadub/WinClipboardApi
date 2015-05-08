@@ -3,11 +3,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2A85BAB8-4C7D-42B1-AFC5-1AD6AF585D8C}</ProjectGuid>
+    <ProjectGuid>{A93BF8EF-3A26-43BD-B854-895497AEF451}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ClipboardViewer.Test</RootNamespace>
-    <AssemblyName>ClipboardViewer.Test</AssemblyName>
+    <RootNamespace>Utils.Wpf.Test</RootNamespace>
+    <AssemblyName>Utils.Wpf.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -53,12 +53,9 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VisibilityConverterTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClipboardViewer\ClipboardViewer.csproj">
-      <Project>{E7B6D4C3-94E3-45C9-836D-464661C06856}</Project>
-      <Name>ClipboardViewer</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Utils.Wpf\Utils.Wpf.csproj">
       <Project>{E443A1C6-6077-4C03-A2C7-BA93C748011B}</Project>
       <Name>Utils.Wpf</Name>
