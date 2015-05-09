@@ -40,6 +40,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\Debugger.cs" />
+    <Compile Include="TypeMapping\DictionaryMapper.cs" />
+    <Compile Include="TypeMapping\PropertyMappers\InjectTypeMapper.cs" />
+    <Compile Include="TypeMapping\TypeBuilders\DictionaryMappingTypeBuilder.cs" />
+    <Compile Include="TypeMapping\TypeBuilders\MappingTypeBuilder.cs" />
     <Compile Include="TypeMapping\MappingInfo\Interfaces.cs" />
     <Compile Include="TypeMapping\MappingInfo\LocatorResolutionInfo.cs" />
     <Compile Include="TypeMapping\MappingInfo\TypeMappingInfo.cs" />
@@ -65,7 +69,7 @@
     <Compile Include="TypeMapping\TypeBuilders\TypeBuilder.cs" />
     <Compile Include="Helpers\Strings.cs" />
     <Compile Include="TypeHelpers.cs" />
-    <Compile Include="TypeMapper.cs" />
+    <Compile Include="TypeMapping\TypeMapper.cs" />
     <Compile Include="TypeMapping\TypeMapperRegistry.cs" />
     <Compile Include="TypeMapping\Attributes.cs" />
     <Compile Include="TypeMapping\Interfaces.cs" />
@@ -76,6 +80,7 @@
     <Compile Include="TypeMapping\ValueResolvers\OptionalParameterResolver.cs" />
     <Compile Include="TypeMapping\ValueResolvers\TypeMapper\SourceAttributeResolver.cs" />
     <Compile Include="TypeMapping\ValueResolvers\SourceMappingResolverBase.cs" />
+    <Compile Include="TypeMapping\ValueResolvers\TypeMapper\SourceKeyValPairResolver.cs" />
     <Compile Include="TypeMapping\ValueResolvers\TypeMapper\SourcePropertyResolver.cs" />
     <Compile Include="TypeMapping\ValueResolvers\InjectValueResolver.cs" />
     <Compile Include="TypeMapping\ValueResolvers\SourceTypeInjector.cs" />

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utils.TypeMapping;
 using Utils.TypeMapping.TypeMappers;
 
 namespace Utils
@@ -53,21 +54,16 @@ namespace Utils
         }
 
 
-        public static void SetPropertyValue(PropertyInfo property, object instance, string value)
+        public static void SetPropertyValue(PropertyInfo property, object instance, string value,ITypeMapper mapper=null)
         {
+            if (mapper==null)
+                mapper = new ConverTypeMapper();
             Debug.Assert(property != null);
             if (property == null || instance == null | value == null)
                 return;
             var propertyType = property.PropertyType;
-            var stringType = typeof(string);
-            if (propertyType == stringType)
-            {
-                property.SetValue(instance, value);
-                return;
-            }
 
-            var converTypeMapper= new ConverTypeMapper();
-            var convertionResult = converTypeMapper.Map(value,propertyType);
+            var convertionResult = mapper.Map(value, propertyType);
             if (convertionResult.Success)
             {
                 property.SetValue(instance, convertionResult.Value);
@@ -77,11 +73,11 @@ namespace Utils
             property.SetValue(instance, propValue);
         }
 
-        public static string GetPropertyValue(PropertyInfo property, object instance)
+        public static string GetPropertyValue(PropertyInfo property, object instance, ITypeMapper<object,string> mapper = null)
         {
             var propertyValue = property.GetValue(instance);
-
-            var mapper= new FormatedStringMapper<object>();
+            if(mapper==null)
+                mapper= new FormatedStringMapper<object>();
             var mapResult = mapper.TryMap(propertyValue);
             if (mapResult.Success) 
                 return mapResult.Value;

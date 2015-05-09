@@ -5,7 +5,7 @@ using Utils.Helpers;
 
 namespace Utils.TypeMapping.TypeMappers
 {
-    internal class FormatedStringMapper<TSource> : TypeMapperBase<TSource, string>
+    public class FormatedStringMapper<TSource> : TypeMapperBase<TSource, string>
     {
 
         public override IOperationResult<string> TryMap(TSource source)

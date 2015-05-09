@@ -51,6 +51,7 @@ namespace Utils.TypeMapping.TypeBuilders
 
             RegisterPropertyMapper(new PropertyMapper());
             RegisterPropertyMapper(new InitPropertyMapper());
+            RegisterPropertyMapper(new InjectTypeMapper());
             
             this.propertyTypeMappers = propertyMappers;
         }

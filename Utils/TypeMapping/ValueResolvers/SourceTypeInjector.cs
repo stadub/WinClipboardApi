@@ -10,6 +10,8 @@ namespace Utils.TypeMapping.ValueResolvers
         protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             var sourceValue = memberInfo.SourceInstance;
+            if (sourceValue==null)
+                return OperationResult.Failed();
             if(memberInfo.Type==memberInfo.SourceType)
                 return OperationResult.Successful(sourceValue);
 

@@ -174,6 +174,17 @@ namespace Utils.Test
 
 
         }
+
+        public class ClassWStringProperty
+        {
+            public string SourceURL { get; set; }
+        }
+
+        public class ClassWProperty
+        {
+            public Uri SourceURL { get; set; }
+        }
+
         #endregion TestClasses
 
         [TestMethod]
@@ -382,6 +393,40 @@ namespace Utils.Test
             {
                 Assert.AreEqual(arr[i].ToString(), dest.Prop[i]);
             }
+           
+        }
+        
+        
+        [TestMethod]
+        public void ShouldMapPropertyByConstructing()
+        {
+            var source = new ClassWStringProperty();
+            source.SourceURL = "http://test.link/";
+
+            var mapper = new TypeMapper<ClassWStringProperty, ClassWProperty>();
+
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.IsNotNull(dest.SourceURL);
+            Assert.AreEqual(source.SourceURL,dest.SourceURL.AbsoluteUri);
+           
+        } 
+        
+        [TestMethod]
+        public void ShouldMapTypeByDictionary()
+        {
+            var source = new Dictionary<string, int>();
+
+            source.Add("Prop",1);
+            source.Add("Prop2", 1);
+            source.Add("Prop3", 1);
+            var mapper = new DictionaryMapper<int, ClassW4Properties>();
+
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(source["Prop"], dest.Prop);
+            Assert.AreEqual(source["Prop2"], dest.Prop2);
+            Assert.AreEqual(source["Prop3"], dest.Prop3);
            
         }
     }

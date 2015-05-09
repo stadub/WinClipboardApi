@@ -61,6 +61,7 @@ namespace Utils.TypeMapping.TypeBuilders
 
             RegisterSourceResolver(new InjectValueResolver());
             RegisterSourceResolver(new OptionalParameterResolver());
+            RegisterSourceResolver(new SourceTypeInjector());
 
             //RegisterSourceResolver(new LocatorValueInjector(new ServiceLocator()));
             //PropertyRegistrationInfo
