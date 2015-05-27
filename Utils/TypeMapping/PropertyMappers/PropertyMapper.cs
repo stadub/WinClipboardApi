@@ -1,13 +1,18 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace Utils.TypeMapping.PropertyMappers
 {
     public class PropertyMapper : IPropertyMapper
     {
-        public bool MapPropery(ITypeMapper mapper, PropertyInfo propInfo, object sourceValue, object instance)
+        public bool MapPropery(ITypeMapper mapper, PropertyInfo propInfo, object sourceValue, object instance, IList<Attribute> metadata = null)
         {
-
-            var mappingResult = mapper.Map(sourceValue, propInfo.PropertyType);
+            IOperationResult mappingResult;
+            if (mapper is ITypeInfoMapper)
+                mappingResult = ((ITypeInfoMapper)mapper).Map(new SourceInfo(sourceValue) { Attributes = metadata }, propInfo.PropertyType);   
+            else
+                mappingResult = mapper.Map(sourceValue, propInfo.PropertyType);
             if (mappingResult.Success)
             {
                 propInfo.SetValue(instance, mappingResult.Value);
@@ -15,5 +20,6 @@ namespace Utils.TypeMapping.PropertyMappers
             }
             return false;
         }
+
     }
 }

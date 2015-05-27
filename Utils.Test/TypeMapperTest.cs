@@ -147,13 +147,13 @@ namespace Utils.Test
                 return PropertyToResolve.Name == memberInfo.Name;
             }
 
-            protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+            protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
             {
                 if (PropertyToResolve.Name == memberInfo.Name)
                 {
-                    return OperationResult.Successful(ProertyValue);
+                    return SourceInfo.Create(ProertyValue);
                 }
-                return OperationResult.Failed();
+                return null;
             }
 
         }
@@ -177,13 +177,21 @@ namespace Utils.Test
 
         public class ClassWStringProperty
         {
-            public string SourceURL { get; set; }
+            public string Prop { get; set; }
         }
 
         public class ClassWProperty
         {
-            public Uri SourceURL { get; set; }
+            public Uri Prop { get; set; }
         }
+
+        public class ClassWFormatedProperty
+        {
+
+            [FormatedNumeric("D9")]
+            public long Prop { get; set; }
+        }
+        
 
         #endregion TestClasses
 
@@ -401,14 +409,14 @@ namespace Utils.Test
         public void ShouldMapPropertyByConstructing()
         {
             var source = new ClassWStringProperty();
-            source.SourceURL = "http://test.link/";
+            source.Prop = "http://test.link/";
 
             var mapper = new TypeMapper<ClassWStringProperty, ClassWProperty>();
 
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
-            Assert.IsNotNull(dest.SourceURL);
-            Assert.AreEqual(source.SourceURL,dest.SourceURL.AbsoluteUri);
+            Assert.IsNotNull(dest.Prop);
+            Assert.AreEqual(source.Prop,dest.Prop.AbsoluteUri);
            
         } 
         
@@ -427,6 +435,20 @@ namespace Utils.Test
             Assert.AreEqual(source["Prop"], dest.Prop);
             Assert.AreEqual(source["Prop2"], dest.Prop2);
             Assert.AreEqual(source["Prop3"], dest.Prop3);
+           
+        }
+        
+        [TestMethod]
+        public void ShouldMapFormatedProperty()
+        {
+            var source = new ClassWFormatedProperty();
+
+            source.Prop = 1;
+            var mapper = new TypeMapper<ClassWFormatedProperty, ClassWStringProperty>();
+
+            var dest = mapper.Map(source);
+            Assert.IsNotNull(dest);
+            Assert.AreEqual("000000001", dest.Prop);
            
         }
     }

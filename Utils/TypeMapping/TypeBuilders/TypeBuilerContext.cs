@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Utils.TypeMapping.PropertyMappers;
 using Utils.TypeMapping.TypeMappers;
+using Utils.TypeMapping.ValueResolvers;
 
 namespace Utils.TypeMapping.TypeBuilders
 {
@@ -72,15 +73,16 @@ namespace Utils.TypeMapping.TypeBuilders
             propertyMappers.Push(propertyMapper);
         }
 
-        public MappingResult MapProperty(PropertyInfo propertyInfo, object value)
+        public MappingResult MapProperty(PropertyInfo propertyInfo, ISourceInfo memberInfo)
         {
 
             if (propertyTypeMappers.ContainsKey(propertyInfo))
             {
                 var mapper = propertyTypeMappers[propertyInfo];
-
-                var conversionResult = mapper.Map(value, propertyInfo.PropertyType);
-                if (conversionResult.Success)
+                IOperationResult conversionResult = null;
+                if(mapper.CanMap(memberInfo.Value,propertyInfo.PropertyType))
+                    conversionResult = mapper.Map(memberInfo.Value, propertyInfo.PropertyType);
+                if (conversionResult!=null && conversionResult.Success)
                 {
                     propertyInfo.SetValue(Instance, conversionResult.Value);
                     ResolvedProperties.Add(propertyInfo);
@@ -99,7 +101,9 @@ namespace Utils.TypeMapping.TypeBuilders
                 {
                     var typeMapper = valueMappers[i];
 
-                    var result = mapper.MapPropery(typeMapper, propertyInfo, value, Instance);
+                    if(!typeMapper.CanMap(memberInfo.Value,propertyInfo.PropertyType))
+                        continue;
+                    var result = mapper.MapPropery(typeMapper, propertyInfo, memberInfo.Value, Instance, memberInfo.Attributes);
                     if (result)
                     {
                         ResolvedProperties.Add(propertyInfo);

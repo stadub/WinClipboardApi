@@ -15,19 +15,19 @@ namespace Utils.TypeMapping.ValueResolvers
             return IsMemberSuitable(new BuilderMemberInfo(mappingMember));
         }
 
-        public OperationResult ResolveSourceValue(PropertyInfo mappingMember, object source)
+        public ISourceInfo ResolveSourceValue(PropertyInfo mappingMember, object source)
         {
             return ResolveSourceValue(new MappingMemberInfo(mappingMember, source));
         }
 
-        public OperationResult ResolveSourceValue(ParameterInfo mappingMember,object source)
+        public ISourceInfo ResolveSourceValue(ParameterInfo mappingMember,object source)
         {
             return ResolveSourceValue(new MappingMemberInfo(mappingMember, source));
         }
 
         protected abstract bool IsMemberSuitable(BuilderMemberInfo memberInfo);
 
-        protected abstract OperationResult ResolveSourceValue(MappingMemberInfo memberInfo);
+        protected abstract ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo);
        
     }
 }

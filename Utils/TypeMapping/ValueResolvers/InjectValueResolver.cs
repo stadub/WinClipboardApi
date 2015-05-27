@@ -12,19 +12,24 @@ namespace Utils.TypeMapping.ValueResolvers
         }
 
 
-        protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+        protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             var attribute = memberInfo.Attributes.FirstOrDefault(x => x is InjectValueAttribute) as InjectValueAttribute;
 
-            if (attribute==null || attribute.Value == null)
-                return OperationResult.Failed(new ArgumentException("Mappling value is not set", "Value"));
+            if (attribute == null || attribute.Value == null)
+            {
+                Logger.LogError("InjectValueResolver::ResolveSourceValue", "Mappling value is not set");
+                return null;
+            }
 
             if (attribute.Value is string && string.IsNullOrWhiteSpace(attribute.Value.ToString()))
-                return OperationResult.Failed(new ArgumentException("Mappling value cannot be empty", "Value"));
+            {
+                Logger.LogError("InjectValueResolver::ResolveSourceValue", "Mappling value cannot be empty");
+                return null;
+            }
 
-
-            var convertedType = Convert.ChangeType(attribute.Value, memberInfo.Type);
-            return OperationResult.Successful(convertedType);
+            var convertedValue = Convert.ChangeType(attribute.Value, memberInfo.Type);
+            return SourceInfo.Create(convertedValue);;
         }
 
     }

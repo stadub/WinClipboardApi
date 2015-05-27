@@ -48,6 +48,11 @@ namespace Utils
         public bool LocatorInjectOnlyFlaggedProperties { get;set; }
 
 
+        public override bool CanMap(TSource source)
+        {
+            return true;
+        }
+
         public override IOperationResult<TDest> TryMap(TSource source)
         {
             var mapper = CreateTypeBuilder();

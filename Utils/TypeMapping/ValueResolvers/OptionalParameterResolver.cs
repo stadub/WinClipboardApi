@@ -14,20 +14,20 @@ namespace Utils.TypeMapping.ValueResolvers
             return paramInfo.IsOptional;
         }
 
-        public OperationResult ResolveSourceValue(PropertyInfo mappingMember, object source)
+        public ISourceInfo ResolveSourceValue(PropertyInfo mappingMember, object source)
         {
-            return OperationResult.Failed();
+            return null;
         }
 
-        public OperationResult ResolveSourceValue(ParameterInfo paramInfo, object source)
+        public ISourceInfo ResolveSourceValue(ParameterInfo paramInfo, object source)
         {
             //optional parametr - defaut value or default(T)
             if (paramInfo.IsOptional)
             {
                 var value = paramInfo.HasDefaultValue ? paramInfo.DefaultValue : TypeHelpers.GetDefault(paramInfo.ParameterType);
-                return OperationResult.Successful(value);
+                return SourceInfo.Create(value);
             }
-            return OperationResult.Failed();
+            return null;
         }
       
     }

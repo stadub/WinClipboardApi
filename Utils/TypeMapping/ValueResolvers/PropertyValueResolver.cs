@@ -19,21 +19,21 @@ namespace Utils.TypeMapping.ValueResolvers
             return propertyInjections.ContainsKey(BuilderUtils.GetKey(propertyInfo));
         }
 
-        public OperationResult ResolveSourceValue(PropertyInfo propertyInfo, object source)
+        public ISourceInfo ResolveSourceValue(PropertyInfo propertyInfo, object source)
         {
             var key = BuilderUtils.GetKey(propertyInfo);
             object value;
             if (propertyInjections.TryGetValue(key, out value))
             {
-                return OperationResult.Successful(value);
+                return SourceInfo.Create(value);
             }
-            return OperationResult.Failed();
+            return null;
 
         }
 
-        public OperationResult ResolveSourceValue(ParameterInfo propertyInfo, object source)
+        public ISourceInfo ResolveSourceValue(ParameterInfo propertyInfo, object source)
         {
-            return OperationResult.Failed();
+            return null;
         }
 
         public bool IsMemberSuitable(ParameterInfo mappingMember)

@@ -12,16 +12,16 @@ namespace Utils.TypeMapping.ValueResolvers
             return true;
         }
 
-        protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+        protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             var sourceValue = memberInfo.SourceInstance;
             var sourceType = memberInfo.SourceType;
 
             var propInfo = TryFindAppropriateProperty(memberInfo.Name, sourceType);
             if (propInfo == null)
-                return OperationResult.Failed();
+                return null;
             var value = propInfo.GetValue(sourceValue);
-            return OperationResult.Successful(value);
+            return new SourceInfo(value) { Attributes = propInfo.GetCustomAttributes().ToArray() };
         }
 
         private static bool NameIsSame(PropertyInfo property, string name)

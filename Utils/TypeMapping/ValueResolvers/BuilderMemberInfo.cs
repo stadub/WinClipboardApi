@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 
 namespace Utils.TypeMapping.ValueResolvers
@@ -54,4 +55,18 @@ namespace Utils.TypeMapping.ValueResolvers
     {
         Parameter, Property
     }
+
+    public class MappingItemInfo
+    {
+        public MappingItemInfo(object value)
+        {
+            Value = value;
+        }
+
+        public object Value { get; private set; }
+        public Type Type { get { return Value.GetType(); } }
+        public IList<Attribute> Attributes { get; set; }
+    }
+
+
 }

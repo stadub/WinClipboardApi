@@ -28,7 +28,7 @@ namespace Utils.TypeMapping.ValueResolvers.ServiceLocator
             return false;
         }
 
-        public OperationResult ResolveSourceValue(PropertyInfo propInfo, object source)
+        public ISourceInfo ResolveSourceValue(PropertyInfo propInfo, object source)
         {
             var propInfoKey=BuilderUtils.GetKey(propInfo);
             KeyValuePair<string, Type> valueType;
@@ -37,15 +37,15 @@ namespace Utils.TypeMapping.ValueResolvers.ServiceLocator
                 object value;
                 if (locator.TryResolve(valueType.Value, valueType.Key, out value))
                 {
-                    return OperationResult.Successful(value);
+                    return SourceInfo.Create(value);
                 }
             }
-            return OperationResult.Failed();
+            return null;
         }
 
-        public OperationResult ResolveSourceValue(ParameterInfo mappingMember, object source)
+        public ISourceInfo ResolveSourceValue(ParameterInfo mappingMember, object source)
         {
-            return OperationResult.Failed();
+            return null;
         }
 
 

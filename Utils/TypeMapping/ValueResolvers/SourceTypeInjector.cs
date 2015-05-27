@@ -7,15 +7,15 @@ namespace Utils.TypeMapping.ValueResolvers
             return true;
         }
 
-        protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+        protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             var sourceValue = memberInfo.SourceInstance;
             if (sourceValue==null)
-                return OperationResult.Failed();
+                return null;
             if(memberInfo.Type==memberInfo.SourceType)
-                return OperationResult.Successful(sourceValue);
+                return SourceInfo.Create(sourceValue);;
 
-            return OperationResult.Failed();
+            return null;
         }
     }
 }

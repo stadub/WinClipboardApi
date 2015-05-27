@@ -64,13 +64,13 @@ namespace Utils
             base.Context= new TypeMapperContext<TSource, TDest>(properyMappers);
         }
 
-
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
+        protected override ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
         {
+            var sourceValue = sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
         }
 
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo)
+        protected override ISourceInfo GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(parameterInfo, Context.Source);
         }

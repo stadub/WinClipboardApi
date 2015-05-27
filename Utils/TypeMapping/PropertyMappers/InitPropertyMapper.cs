@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Utils.TypeMapping.PropertyMappers
 {
     public class InitPropertyMapper : IPropertyMapper
     {
-        public bool MapPropery(ITypeMapper mapper, PropertyInfo propInfo, object sourceValue, object instance)
+        public bool MapPropery(ITypeMapper mapper, PropertyInfo propInfo, object sourceValue, object instance, IList<Attribute> metadata = null)
         {
             Exception exception;
             MethodBase initalizerMethod = null;
@@ -26,7 +27,14 @@ namespace Utils.TypeMapping.PropertyMappers
                     //throw new ArgumentException("Only initalizers with single argument are supported.");
 
                 var paramType = parameters[0].ParameterType;
-                var mappingResult = mapper.Map(sourceValue, paramType);
+                if (!mapper.CanMap(sourceValue, paramType))
+                    return false;
+
+                IOperationResult mappingResult;
+                if (mapper is ITypeInfoMapper)
+                    mappingResult = ((ITypeInfoMapper)mapper).Map(new SourceInfo(sourceValue){Attributes = metadata}, paramType);
+                else
+                    mappingResult = mapper.Map(sourceValue, paramType);
                 if (mappingResult.Success)
                 {
                     var invokationInfo = new InitMethodInfo{
@@ -73,5 +81,6 @@ namespace Utils.TypeMapping.PropertyMappers
             public object Instance { get; set; }
             public object[] MappingArgs { get; set; }
         }
+
     }
 }

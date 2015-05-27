@@ -9,16 +9,16 @@ namespace Utils.TypeMapping.ValueResolvers
             return true;
         }
 
-        protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+        protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             IDictionary<string, TProp> sourceValues=memberInfo.SourceInstance as IDictionary<string, TProp>;
             if(sourceValues==null)
-                return OperationResult.Failed();
+                return null;
 
             TProp sourceProp;
             var sourceFound = sourceValues.TryGetValue(memberInfo.Name, out sourceProp);
 
-            return !sourceFound ? OperationResult.Failed() : OperationResult.Successful(sourceProp);
+            return !sourceFound ? null : SourceInfo.Create(sourceProp);;
         }
     }
 }

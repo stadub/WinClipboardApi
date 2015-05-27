@@ -39,6 +39,12 @@ namespace Utils.TypeMapping
         }
 
         public Type DestType { get; private set; }
+
+        public override bool CanMap(IDictionary<string, TSource> source)
+        {
+            return true;
+        }
+
     }
 
 

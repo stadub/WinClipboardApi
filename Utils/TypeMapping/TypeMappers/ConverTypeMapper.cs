@@ -1,9 +1,15 @@
 using System;
+using System.ComponentModel;
 
 namespace Utils.TypeMapping.TypeMappers
 {
     public class ConverTypeMapper<TSource, TDest> :ConverTypeMapper, ITypeMapper<TSource, TDest>
     {
+        public bool CanMap(TSource source)
+        {
+            return base.CanMap(source, typeof (TDest));
+        }
+
         public IOperationResult<TDest> TryMap(TSource sourceValue)
         {
             var destType = typeof (TDest);
@@ -21,10 +27,9 @@ namespace Utils.TypeMapping.TypeMappers
         }
     }
 
-
     public class ConverTypeMapper : ITypeMapper
     {
-        public IOperationResult<object> Map(object source, Type destType)
+        public IOperationResult Map(object source, Type destType)
         {
             if (source == null)
                 return OperationResult.Failed();
@@ -50,5 +55,11 @@ namespace Utils.TypeMapping.TypeMappers
             }
         }
 
+        public bool CanMap(object source, Type destType)
+        {
+            if (destType.IsInstanceOfType(source)) return true;
+            if(source is IConvertible) return true;
+            return TypeDescriptor.GetConverter(source.GetType()).CanConvertTo(destType);
+        }
     }
 }

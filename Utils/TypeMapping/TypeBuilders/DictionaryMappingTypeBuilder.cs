@@ -24,13 +24,13 @@ namespace Utils
         {
             base.Context= new TypeMapperContext<IDictionary<string,TSource>, TDest>();
         }
-        
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
+
+        protected override ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
         }
 
-        protected override OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo)
+        protected override ISourceInfo GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo parameterInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(parameterInfo, Context.Source);
         }

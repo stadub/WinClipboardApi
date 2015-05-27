@@ -7,7 +7,7 @@ namespace Utils.TypeMapping.ValueResolvers
     class SourceAttributeResolver : SourcePropertyResolver
     {
 
-        protected override OperationResult ResolveSourceValue(MappingMemberInfo memberInfo)
+        protected override ISourceInfo ResolveSourceValue(MappingMemberInfo memberInfo)
         {
             var sourceValue = memberInfo.SourceInstance;
 
@@ -29,10 +29,10 @@ namespace Utils.TypeMapping.ValueResolvers
             {
                 return GetProperyByPath(srcPropMap, sourceValue);
             }
-            return OperationResult.Failed();
+            return null;
         }
 
-        private OperationResult GetPropertyByName(MappingMemberInfo memberInfo, MapSourcePropertyAttribute srcPropMap,
+        private ISourceInfo GetPropertyByName(MappingMemberInfo memberInfo, MapSourcePropertyAttribute srcPropMap,
             object sourceValue)
         {
             var sourceType = memberInfo.SourceType;
@@ -40,10 +40,10 @@ namespace Utils.TypeMapping.ValueResolvers
 
             var value = srcProp.GetValue(sourceValue);
 
-            return OperationResult.Successful(value);
+            return new SourceInfo(value) { Attributes = srcProp.GetCustomAttributes().ToArray()};
         }
 
-        private OperationResult GetProperyByPath(MapSourcePropertyAttribute srcPropMap, object sourceValue)
+        private ISourceInfo GetProperyByPath(MapSourcePropertyAttribute srcPropMap, object sourceValue)
         {
             object propValue;
             var path = srcPropMap.Path.Split('.');
@@ -60,9 +60,9 @@ namespace Utils.TypeMapping.ValueResolvers
                     break;
                 }
                 propValue = prop.GetValue(propValue);
-                if (propValue == null) return OperationResult.Failed();
+                if (propValue == null) return null;
             }
-            return OperationResult.Successful(propValue);
+            return SourceInfo.Create(propValue);
         }
 
         protected override bool IsMemberSuitable(BuilderMemberInfo memberInfo)

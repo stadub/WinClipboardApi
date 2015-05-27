@@ -3,7 +3,14 @@ using System.Diagnostics;
 
 namespace Utils
 {
-    public interface IOperationResult<out T>
+    public interface IOperationResult
+    {
+        bool Success { get; }
+        Object Value { get; }
+        Exception Error { get; }
+    }
+
+    public interface IOperationResult<out T> : IOperationResult
     {
         bool Success { get; }
         T Value { get; }
@@ -38,6 +45,7 @@ namespace Utils
         }
 
         public bool Success { get; private set; }
+        object IOperationResult.Value { get { return this.Value; } }
         public T Value { get; private set; }
         public Exception Error { get; private set; }
     }

@@ -115,7 +115,7 @@ namespace Utils.TypeMapping.TypeBuilders
                 }
 
                 var paramResolution = ResolveParameterValue(paramDef);
-                if (paramResolution.Success)
+                if (paramResolution!=null)
                     paramValues.Add(paramResolution.Value);
                 else
                     throw new TypeInitalationException(DestType.FullName, string.Format("Property {0} doesn't resolved", paramDef.Name));
@@ -123,20 +123,20 @@ namespace Utils.TypeMapping.TypeBuilders
             return paramValues.ToArray();
         }
 
-        private OperationResult ResolveParameterValue(ParameterInfo paramDef)
+        private ISourceInfo ResolveParameterValue(ParameterInfo paramDef)
         {
             foreach (var sourceResolver in sourceResolvers)
             {
                 if (sourceResolver.IsMemberSuitable(paramDef))
                 {
                     var sourceValue = GetValue(sourceResolver, paramDef);
-                    if (sourceValue.Success)
+                    if (sourceValue!=null)
                     {
                         return sourceValue;
                     }
                 }
             }
-            return OperationResult.Failed();
+            return null;
         }
 
 
@@ -176,34 +176,36 @@ namespace Utils.TypeMapping.TypeBuilders
                     continue;
                 }
 
-                var resolutionResult = ResolvePropertyValue(prop);
-                if (resolutionResult.Success)
-                    Context.MapProperty(prop, resolutionResult.Value);
+                var resolutionResult = ResolvePropertyInfo(prop);
+                if (resolutionResult!=null)
+                {
+                    Context.MapProperty(prop, resolutionResult);
+                }
             }
         }
 
-        private OperationResult ResolvePropertyValue(PropertyInfo propertyInfo)
+        private ISourceInfo ResolvePropertyInfo(PropertyInfo propertyInfo)
         {
             foreach (var sourceResolver in sourceResolvers)
             {
                 if (sourceResolver.IsMemberSuitable(propertyInfo))
                 {
-                    var sourceValue = GetValue(sourceResolver, propertyInfo);
-                    if (sourceValue.Success && sourceValue.Value!=null)
+                    var sourceValue = GetMappingData(sourceResolver, propertyInfo);
+                    if (sourceValue!=null && sourceValue.Value!=null)
                     {
                         return sourceValue;
                     }
                 }
             }
-            return OperationResult.Failed();
+            return null;
         }
 
-        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
+        protected virtual ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, null);
         }
 
-        protected virtual OperationResult GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo propertyInfo)
+        protected virtual ISourceInfo GetValue(ISourceMappingResolver sourceMappingResolver, ParameterInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, null);
         }
