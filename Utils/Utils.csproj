@@ -43,7 +43,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="TypeMapping\DictionaryMapper.cs" />
     <Compile Include="TypeMapping\PropertyMappers\InjectTypeMapper.cs" />
-    <Compile Include="TypeMapping\MappingInfo\SourceResolutionResult.cs" />
+    <Compile Include="TypeMapping\MappingInfo\SourceInfo.cs" />
     <Compile Include="TypeMapping\TypeBuilders\DictionaryMappingTypeBuilder.cs" />
     <Compile Include="TypeMapping\TypeBuilders\MappingTypeBuilder.cs" />
     <Compile Include="TypeMapping\MappingInfo\Interfaces.cs" />
