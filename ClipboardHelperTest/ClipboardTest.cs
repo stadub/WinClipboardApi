@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using ClipboardHelper;
 using ClipboardHelper.FormatProviders;
+using ClipboardHelper.Watcher;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Clipboard = ClipboardHelper.Clipboard;
 using Clpbrd=System.Windows.Forms.Clipboard;
@@ -16,6 +17,27 @@ namespace ClipboardHelperTest
     public class ClipboardTest
     {
 
+        public ClipbordWatcher StartWatcher()
+        {
+            var watcher = new ClipbordWatcher();
+            Clpbrd.Clear();
+            watcher.StartListen();
+            return watcher;
+        }
+
+
+        public IClipboardWriter CreateClipboardWriter(ClipbordWatcher watcher)
+        {
+            var clipboard = new Clipboard();
+            return clipboard.CreateWriter(watcher);
+        }
+
+        public IClipboardReader CreateClipboardReader()
+        {
+            var clipboard = new Clipboard();
+            return clipboard.CreateReader();
+        }
+
         private const string testString = "Lorem ipsum dolor sit amet Ё";
 
         [TestMethod]
@@ -23,13 +45,16 @@ namespace ClipboardHelperTest
         {
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
             Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText), testString);
-            var clipboard =Clipboard.CreateReadOnly();
-            clipboard.OpenReadOnly();
-            clipboard.Clear();
-            clipboard.Close();
-            Assert.IsTrue(!Clpbrd.ContainsText());
 
+            var watcher = StartWatcher();
+            using (var clipboardWriter = CreateClipboardWriter(watcher))
+            {
+                clipboardWriter.Clear();
+            }
+            Assert.IsTrue(!Clpbrd.ContainsText());
+            watcher.Stop();
         }
+
         [TestMethod]
         public void ShouldReceiveUnicodeStringFromClipbord()
         {
@@ -37,15 +62,14 @@ namespace ClipboardHelperTest
             Clpbrd.SetText(testString, TextDataFormat.UnicodeText);
             Assert.AreEqual(Clpbrd.GetText(TextDataFormat.UnicodeText),testString);
             string data;
-            using (var clipboard = Clipboard.CreateReadOnly())
+            var clipboard = new Clipboard();
+            using (var clipboardReader = clipboard.CreateReader())
             {
                 var provider = new UnicodeTextProvider();
                 var dataAvalable = clipboard.IsDataAvailable(provider);
                 Assert.IsTrue(dataAvalable);
-                clipboard.OpenReadOnly();
-                clipboard.GetData(provider);
+                clipboardReader.GetData(provider);
                 data = provider.Text;
-                clipboard.Close();
             }
             
             Assert.AreEqual(data, testString);
@@ -58,14 +82,13 @@ namespace ClipboardHelperTest
             wrapper.CreateWindow();
             Thread.Sleep(100);
 
-            using (var clipboard = Clipboard.CreateReadWrite(wrapper))
+            var watcher = StartWatcher();
+            using (var clipboardWriter = CreateClipboardWriter(watcher))
             {
                 var provider = new UnicodeTextProvider();
-                clipboard.Open();
-                clipboard.Clear();
+                clipboardWriter.Clear();
                 provider.Text = testString;
-                clipboard.SetData(provider);
-                clipboard.Close();
+                clipboardWriter.SetData(provider);
             }
             var curText = Clpbrd.GetData("UnicodeText");
             var formats=Clpbrd.GetDataObject().GetFormats();
@@ -77,11 +100,11 @@ namespace ClipboardHelperTest
         {
             Clpbrd.SetText("123", TextDataFormat.UnicodeText);
             IEnumerable<IClipbordFormatProvider> formats;
-            using (var clipboard = Clipboard.CreateReadOnly())
+            var clipboard = new Clipboard();
+            using (var clipboardReader = clipboard.CreateReader())
             {
-                clipboard.OpenReadOnly();
                 clipboard.RegisterFormatProvider(()=>new UnicodeTextProvider());
-                formats = clipboard.GetAvalibleFromats().ToList();
+                formats = clipboardReader.GetAvalibleFromats().ToList();
                 clipboard.Close();
             }
             Assert.IsTrue(formats.Any(provider => provider.FormatId == "CF_UNICODETEXT"));
@@ -92,29 +115,16 @@ namespace ClipboardHelperTest
         {
             Clpbrd.SetText("123", TextDataFormat.UnicodeText);
             IList<IClipbordFormatProvider> formats;
-            using (var clipboard = Clipboard.CreateReadOnly())
+            var clipboard = new Clipboard();
+            using (var clipboardReader = clipboard.CreateReader())
             {
-                clipboard.OpenReadOnly();
-
-                formats = clipboard.GetAvalibleFromats(true).ToList();
+                formats = clipboardReader.GetAvalibleFromats(true).ToList();
                 clipboard.Close();
             }
-            Assert.IsTrue(formats[0] is UnknownFormatProvider);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ClipboardClosedException))]
-        public void ShouldThrowClipboardClosedExceptionWhenTryingToEnumerateAfterClose()
-        {
-            using (var clipboard = Clipboard.CreateReadOnly())
-            {
-                clipboard.OpenReadOnly();
-                clipboard.RegisterFormatProvider(()=>new UnicodeTextProvider());
-                var formats=clipboard.GetAvalibleFromats();
-                clipboard.Close();
-                formats.ToList();
-            }
-            
+            Assert.AreEqual(6,formats.Count);
+            var unicodeTextProvider = formats[0] as NotImplementedStandartFormat;
+            Assert.IsNotNull(unicodeTextProvider);
+            Assert.AreEqual("CF_UNICODETEXT", unicodeTextProvider.FormatId);
         }
 
         private const string TextHtmlData = @"Version:1.0
@@ -140,7 +150,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
         [TestMethod]
         public void ShouldDeserializeSampleHtmlData()
         {
-            UnicodeStringSerializer serializer=new UnicodeStringSerializer();
+            var serializer = new UTF8StringSerializer();
             var bytes=serializer.Serialize(TextHtmlData);
 
             HtmlFormatProvider provider= new HtmlFormatProvider();
@@ -153,7 +163,7 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
             Assert.AreEqual(result.EndFragment,000001112);
             Assert.AreEqual(result.StartSelection,000000507);
             Assert.AreEqual(result.EndSelection,000001108);
-            Assert.AreEqual(result.SourceURL, new Uri("res://iesetup.dll/HardAdmin.htm"));
+            Assert.AreEqual(new Uri("res://iesetup.dll/HardAdmin.htm"),result.SourceURL);
         }
         public static Regex htmlDoc = new Regex(
             "^(<.*)",
@@ -180,11 +190,13 @@ title=""consectetur"" href=""http://www.w3.org"">Cras et arcu id dui eleifend eu
                 Html = results[1]
             };
 
+
+
             HtmlFormatProvider provider = new HtmlFormatProvider(data);
             byte[] result = provider.Serialize();
             UnicodeStringSerializer serializer = new UnicodeStringSerializer();
             var text = serializer.Deserialize(result);
-            Assert.AreEqual(text, TextHtmlData);
+            Assert.AreEqual(TextHtmlData,text);
         }
 
         private const String skypeQuote =

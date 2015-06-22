@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Utils;
+using Utils.TypeMapping;
+using Utils.TypeMapping.TypeMappers;
 
 namespace ClipboardHelper.FormatProviders
 {
@@ -30,6 +33,7 @@ namespace ClipboardHelper.FormatProviders
         [FormatedNumeric("D9")]
         public long EndSelection { get; set; }
 
+        [Formated(null)]
         public Uri SourceURL { get; set; }
 
         [NonSerializable]
@@ -87,24 +91,13 @@ namespace ClipboardHelper.FormatProviders
             get { return "HTML Format"; }
         }
 
+
+
         public override byte[] Serialize()
         {
-            StringBuilder clipboardDataBuilder = new StringBuilder();
-            var properties = typeof (HtmlClipboardFormatData).GetProperties();
-            foreach (var property in properties)
-            {
-                var nonSerializable = property.GetCustomAttribute<NonSerializableAttribute>();
-                if (nonSerializable != null)
-                    continue;
-
-                var value = TypeHelpers.GetPropertyValue(property, HtmlData);
-                var name = property.Name;
-                clipboardDataBuilder.AppendFormat("{0}:{1}", name, value);
-                clipboardDataBuilder.AppendLine();
-            }
-            clipboardDataBuilder.Append(HtmlData.Html);
-            var dataString = clipboardDataBuilder.ToString();
-            return serializer.Serialize(dataString);
+            var mapper = new StringFormatter<HtmlClipboardFormatData>();
+            var data = mapper.Map(HtmlData);
+            return serializer.Serialize(data + HtmlData.Html);
         }
 
 
@@ -131,12 +124,7 @@ namespace ClipboardHelper.FormatProviders
                 Debug.Assert(results[2].Trim().Length == 0);
 
 
-            var properties = typeof (HtmlClipboardFormatData).GetProperties();
-
-            var htmlClipboardData = new HtmlClipboardFormatData();
-            htmlClipboardData.Html = results[1];
-
-
+            var propertiesDictionary=new Dictionary<string, string>();
             MatchCollection ms = groupsRegex.Matches(results[0]);
             foreach (Match match in ms)
             {
@@ -145,12 +133,17 @@ namespace ClipboardHelper.FormatProviders
 
                 string name = match.Groups["GroupName"].Value;
                 var value = match.Groups["GroupValue"].Value.Trim();
-                var property = properties.FirstOrDefault(x => x.Name == name);
 
-                TypeHelpers.SetPropertyValue(property, htmlClipboardData, value);
+                propertiesDictionary.Add(name, value);
+                
             }
-            HtmlData = htmlClipboardData;
 
+            propertiesDictionary.Add("Html", results[1]);
+
+            var mapper = new DictionaryMapper<string, HtmlClipboardFormatData>();
+
+            HtmlData = mapper.Map(propertiesDictionary);
+            
         }
     }
 

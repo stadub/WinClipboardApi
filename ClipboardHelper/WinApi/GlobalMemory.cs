@@ -83,7 +83,7 @@ namespace ClipboardHelper.WinApi
             if (Memory.GlobalUnlock(hMem))
             {
                 var err = Marshal.GetLastWin32Error();
-                if(err==ERROR_NOT_LOCKED)
+                if (err==0 || err == ERROR_NOT_LOCKED)
                     return;
                 ThrowExceptionIfZero(0,"Cannot unlock memory block");
             }

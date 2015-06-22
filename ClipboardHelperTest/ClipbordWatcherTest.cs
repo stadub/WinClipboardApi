@@ -65,14 +65,15 @@ namespace ClipboardHelperTest
         public void ShouldReceiveDestroyMessage()
         {
             var watcher = StartWatcher();
+            var clipboard = new Clipboard();
+            var provider = new UnicodeTextProvider();
+            provider.Text = testString;
 
-            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            using (var clipboardWriter = clipboard.CreateWriter(watcher))
             {
-                var provider = new UnicodeTextProvider();
-                clipboard.Open();
-                clipboard.Clear();
-                provider.Text = testString;
-                clipboard.SetData(provider);
+                clipboardWriter.Clear();
+
+                clipboardWriter.SetData(provider);
             }
 
             bool destroyMsgReceived = false;
@@ -95,12 +96,12 @@ namespace ClipboardHelperTest
 
             watcher.StartListen();
             string text=null;
-            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            var clipboard = new Clipboard();
+            using (var clipboardWriter = clipboard.CreateWriter(watcher))
             {
                 var provider = new UnicodeTextProvider();
-                clipboard.Open();
-                clipboard.Clear();
-                clipboard.EnrolDataFormat(provider);
+                clipboardWriter.Clear();
+                clipboardWriter.EnrolDataFormat(provider);
             }
 
             bool renderFormatRequested = false;
@@ -128,12 +129,11 @@ namespace ClipboardHelperTest
             string text=null;
             var provider = new UnicodeTextProvider();
 
-            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            var clipboard = new Clipboard();
+            using (var clipboardWriter = clipboard.CreateWriter(watcher))
             {
-                
-                clipboard.Open();
-                clipboard.Clear();
-                clipboard.EnrolDataFormat(provider);
+                clipboardWriter.Clear();
+                clipboardWriter.EnrolDataFormat(provider);
             }
 
             bool renderFormatRequested = false;
@@ -144,7 +144,6 @@ namespace ClipboardHelperTest
                 watcher.OnRenderFormatRequested += (sender, args) =>
                 {
                     renderFormatRequested = true;
-                    var clipboard = Clipboard.CreateReadWrite(watcher);
                     provider.Text = testString;
                     clipboard.SetRequestedData(provider);
                 };
@@ -162,13 +161,13 @@ namespace ClipboardHelperTest
         {
             var watcher = StartWatcher();
 
-            using (var clipboard = Clipboard.CreateReadWrite(watcher))
+            var clipboard = new Clipboard();
+            using (var clipboardWriter = clipboard.CreateWriter(watcher))
             {
                 var provider = new UnicodeTextProvider();
-                clipboard.Open();
-                clipboard.Clear();
+                clipboardWriter.Clear();
                 provider.Text = testString;
-                clipboard.SetData(provider);
+                clipboardWriter.SetData(provider);
             }
 
             bool destroyMsgReceived = false;

@@ -55,9 +55,7 @@ namespace ClipboardHelper.FormatProviders
         }
     }
 
-    public class NonSerializableAttribute : Attribute
-    {
-    }
+
     
     public class UnicodeStringSerializer
     {
@@ -72,6 +70,21 @@ namespace ClipboardHelper.FormatProviders
         {
             Array.Resize(ref data, data.Length - 2);
             return Encoding.Unicode.GetString(data);
+        }
+    }
+
+    public class UTF8StringSerializer
+    {
+        public byte[] Serialize(string data)
+        {
+            data += '\0';
+            return Encoding.Unicode.GetBytes(data);
+        }
+
+
+        public string Deserialize(byte[] data)
+        {
+            return Encoding.UTF8.GetString(data);
         }
     }
 

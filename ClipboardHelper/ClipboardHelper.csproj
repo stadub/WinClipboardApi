@@ -77,12 +77,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataFormat.cs" />
+    <Compile Include="ClipboardReader.cs" />
+    <Compile Include="ClipboardWriter.cs" />
+    <Compile Include="Providers.cs" />
     <Compile Include="FormatProviders\UnicodeTextProvider.cs" />
     <Compile Include="FormatProviders\UnknownFormatProvider.cs" />
     <Compile Include="FormatProviders\ClipboardFormatProviders.cs" />
     <Compile Include="FormatProviders\HtmlFormatProvider.cs" />
     <Compile Include="FormatProviders\SkypeFormatProvider.cs" />
+    <Compile Include="Interfaces.cs" />
     <Compile Include="Watcher\ClipbordWatcherException.cs" />
     <Compile Include="Watcher\ClipbordWatcher.cs" />
     <Compile Include="Watcher\WatcherEnums.cs" />

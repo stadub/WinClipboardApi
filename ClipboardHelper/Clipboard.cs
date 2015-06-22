@@ -11,21 +11,6 @@ using Utils;
 
 namespace ClipboardHelper
 {
-    public interface IClipboard : IDisposable
-    {
-
-        void OpenReadOnly();
-        void Open();
-        void Clear();
-        void RegisterFormatProvider(Func<IClipbordFormatProvider> formatProvider);
-        void GetData(IClipbordFormatProvider provider);
-        bool IsDataAvailable(IClipbordFormatProvider provider);
-        void SetRequestedData(IClipbordFormatProvider provider);
-        void SetData(IClipbordFormatProvider provider);
-        void EnrolDataFormat(IClipbordFormatProvider provider);
-        IEnumerable<IClipbordFormatProvider> GetAvalibleFromats(bool includeUnknown=false);
-        void Close();
-    }
 
     public class Clipboard : IClipboard
     {
@@ -52,27 +37,26 @@ namespace ClipboardHelper
             ClipboardOwner = ownerHwnd;
         }
 
-        protected Clipboard()
+        public Clipboard()
             : this(IntPtr.Zero)
         {
         }
 
-        public static Clipboard CreateReadOnly()
+
+        public IClipboardWriter CreateWriter(IClipbordMessageProvider provider)
         {
-            return new Clipboard();
+            ClipboardOwner = provider.WindowHandle;
+            OpenInt();
+            return new ClipboardWriter(this);
         }
 
-        public static Clipboard CreateReadWrite(IClipbordMessageProvider provider)
-        {
-            return new Clipboard(provider.WindowHandle);
-        }
-
-        public void OpenReadOnly()
+        public IClipboardReader CreateReader()
         {
             OpenInt();
+            return new ClipboardReader(this,registeredFormats,formatProviders);
         }
 
-        public void Open()
+        private void Open()
         {
             if (ClipboardOwner == IntPtr.Zero)
                 throw new OpenClipboardException("Empty window handle is allowed  only for Read only mode.To be able to write to clipboard Clipboard(IntPtr ownerHwnd) constructor should be used.");
@@ -94,7 +78,7 @@ namespace ClipboardHelper
             }
         }
 
-        public void Clear()
+        internal void Clear()
         {
             GuardClipbordOpened();
             allocatedFormats.ForEach(x=>x.Dispose());
@@ -105,7 +89,7 @@ namespace ClipboardHelper
             }
         }
 
-        private void GuardClipbordOpened(bool checkWindowHandle=false)
+        internal void GuardClipbordOpened(bool checkWindowHandle=false)
         {
             if (!Owned)
                 throw new ClipboardClosedException("Operation cannot be performed on the closed clipbord");
@@ -113,40 +97,18 @@ namespace ClipboardHelper
                 throw new ClipboardClosedException("This operation requare clipboard oened in Write mode.");
         }
 
-        
+        public void RegisterFormatProviders(IEnumerable<Func<IClipbordFormatProvider>> providers)
+        {
+            foreach (var provider in providers)
+                RegisterFormatProvider(provider);
+        }
+
         public void RegisterFormatProvider(Func<IClipbordFormatProvider> provider )
         {
-            formatProviders.Add(provider().FormatId,provider);
-        }
-        
-        public void GetData(IClipbordFormatProvider provider)
-        {
-            var formatId = GetFormatId(provider.FormatId);
-            if (!IsDataAvailable(provider))
-                throw new ClipboardDataException("There no data of selected format in the Clipboard", ExceptionHelpers.GetLastWin32Exception());
+            var formatId = provider().FormatId;
 
-            GuardClipbordOpened();
-
-            IntPtr memHandle = GetClipboardData(formatId);
-            if (memHandle == IntPtr.Zero)
-                throw new ClipboardDataException("Can't receive data from clipbord", ExceptionHelpers.GetLastWin32Exception());
-
-            try
-            {
-                using (var memory = new GlobalMemory(memHandle))
-                {
-                    int lenght = (int)memory.Size();
-                    var memPtr = memory.Lock();
-                    var buffer = new byte[lenght];
-                    Marshal.Copy(memPtr, buffer, 0, lenght);
-
-                    provider.Deserialize(buffer);
-                }
-            }
-            catch (GlobalMemoryException exception)
-            {
-                throw new ClipboardDataException("Can't receive data from clipbord",exception);
-            }
+            var id = GetFormatId(formatId);
+            formatProviders.Add(formatId, provider);
         }
 
         public bool IsDataAvailable(IClipbordFormatProvider provider)
@@ -158,17 +120,13 @@ namespace ClipboardHelper
         List<GlobalMemory> allocatedFormats= new List<GlobalMemory>();
 
 
+
         public void SetRequestedData(IClipbordFormatProvider provider)
         {
             SetDataInt(provider);
         }
 
-        public void SetData(IClipbordFormatProvider provider)
-        {
-            GuardClipbordOpened(true);
-            SetDataInt(provider);
-        }
-        protected void SetDataInt(IClipbordFormatProvider provider)
+        protected internal void SetDataInt(IClipbordFormatProvider provider)
         {
             var formatId = GetFormatId(provider.FormatId);
             var bytes=provider.Serialize();
@@ -184,22 +142,7 @@ namespace ClipboardHelper
                 Marshal.Copy(bytes, 0, memPtr, size);
                 memory.Unlock();
 
-                SetClipboardData(formatId, handle);
-            }
-            catch (GlobalMemoryException exception)
-            {
-                throw new ClipboardDataException("Can't save data to clipbord", exception);
-            }
-        }
-
-        public void EnrolDataFormat(IClipbordFormatProvider provider)
-        {
-            var formatId = GetFormatId(provider.FormatId);
-
-            GuardClipbordOpened(true);
-            try
-            {
-                SetClipboardData(formatId, IntPtr.Zero);
+                ClipbordWinApi.SetClipboardData(formatId, handle);
             }
             catch (GlobalMemoryException exception)
             {
@@ -208,8 +151,7 @@ namespace ClipboardHelper
         }
 
 
-
-        private uint GetFormatId(string formatId)
+        public uint GetFormatId(string formatId)
         {
             if (registeredFormats.ContainsKey(formatId))
                 return registeredFormats[formatId];
@@ -231,22 +173,15 @@ namespace ClipboardHelper
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern uint RegisterClipboardFormat(string lpszFormat);
 
-        [DllImport("user32.dll", ThrowOnUnmappableChar = true)]
-        private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
 
         [DllImport("user32.dll")]
         private static extern bool EmptyClipboard();
 
 
-        [DllImport("user32.dll",SetLastError = true)]
-        private static extern IntPtr GetClipboardData(uint uFormat);
 
         [DllImport("user32.dll")]
         public static extern uint EnumClipboardFormats(uint format);
 
-        [DllImport("user32.dll", ThrowOnUnmappableChar = true, CharSet = CharSet.Unicode)]
-        private static extern int GetClipboardFormatName(uint format,
-            [Out][MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpszFormatName, int cchMaxCount);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetClipboardOwner();
@@ -261,62 +196,6 @@ namespace ClipboardHelper
         private static extern bool GetUpdatedClipboardFormats(ref uint[] lpuiFormats, uint cFormats, [Out] UIntPtr pcFormatsOut);
 #endif
 
-
-        public IEnumerable<IClipbordFormatProvider> GetAvalibleFromats(bool includeUnknown=false)
-        {
-            GuardClipbordOpened();
-            List<uint> unknownformatsIds= new List<uint>();
-            uint currentFormat = 0;
-            var registeredIds=registeredFormats.ToDictionary(pair => pair.Value);
-            while (true)
-            {
-                currentFormat = EnumClipboardFormats(currentFormat);
-                if (currentFormat != 0)
-                {
-                    KeyValuePair<string, uint> registeredFormatId;
-                    if (registeredIds.TryGetValue(currentFormat, out registeredFormatId))
-                    {
-                        if (formatProviders.ContainsKey(registeredFormatId.Key))
-                        {
-                            var formatProvider = formatProviders[registeredFormatId.Key];
-                            yield return formatProvider();
-                        }
-                        else
-                            unknownformatsIds.Add(currentFormat);
-                    }
-                    else
-                        unknownformatsIds.Add(currentFormat);
-                }
-                else
-                {
-                    var err = Marshal.GetLastWin32Error();
-                    if (err == 0)
-                    {
-                        if (includeUnknown)
-                        {
-                            var standartFormats =unknownformatsIds.Where(x => Enum.IsDefined(typeof (StandartClipboardFormats), x))
-                                .ToList();
-
-                            foreach (var standartFormat in standartFormats)
-                            {
-                                yield return new NotImplementedStandartFormat((StandartClipboardFormats) standartFormat);
-                            }
-                            foreach (var unknownformatId in unknownformatsIds.Except(standartFormats))
-                            {
-                                var formatNameBuilder = new StringBuilder(100);
-                                GetClipboardFormatName(unknownformatId, formatNameBuilder, 100);
-                                yield return new UnknownFormatProvider(unknownformatId, formatNameBuilder.ToString());
-                            }
-                        }
-                        yield break; 
-                    }
-                    throw ClipboardDataException.FromNative("Error in retreiving avalible clipbord formats");
-
-                }
-            }
-        }
-
-
         public void Close()
         {
             if (!Owned)
@@ -327,6 +206,10 @@ namespace ClipboardHelper
             ClipboardOwner = IntPtr.Zero;
         }
 
+        public bool Closed
+        {
+            get { return Owned; }
+        }
 
         public void Dispose()
         {
@@ -344,5 +227,19 @@ namespace ClipboardHelper
             }
             Close(); 
         }
+    }
+
+    internal static class ClipbordWinApi
+    {
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr GetClipboardData(uint uFormat);
+
+        [DllImport("user32.dll", ThrowOnUnmappableChar = true, CharSet = CharSet.Unicode)]
+        public static extern int GetClipboardFormatName(uint format,
+            [Out][MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpszFormatName, int cchMaxCount);
+
+
+        [DllImport("user32.dll", ThrowOnUnmappableChar = true)]
+        public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
     }
 }

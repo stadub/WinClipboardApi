@@ -9,7 +9,7 @@ namespace ClipboardHelperTest
         public override void Given()
         {
             base.Given();
-            clipboardApi = Clipboard.CreateReadOnly();
+            clipboardApi = new Clipboard();
         }
 
         public override void When()
@@ -23,7 +23,7 @@ namespace ClipboardHelperTest
         [TestMethod]
         public void ShouldGetClipboardText()
         {
-            clipboardApi.OpenReadOnly();
+            clipboardApi = new Clipboard();
             clipboardApi.Close();
         }
     }
