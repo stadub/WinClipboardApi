@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mvvmBase="clr-namespace:ClipboardViewer.MvvmBase;assembly=Utils.Wpf"
         Title="MainWindow" Height="350" Width="525"
-        DataContext="{Binding MainPage, Source={StaticResource ViewModelLocator}}">
+        DataContext="{Binding MainPage, Source={StaticResource ViewModelLocator}}"
+        >
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

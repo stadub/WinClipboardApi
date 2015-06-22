@@ -17,6 +17,8 @@ namespace ClipboardViewer.ViewModel
 
     public class MainWindowViewModel : ViewModelBase,IDisposable
     {
+        public ICommand Loaded { get; set; }
+
         private readonly IClipboard clipboard;
 
         private readonly Func<IClipbordFormatProvider>[] clipboardFormats;
@@ -26,11 +28,14 @@ namespace ClipboardViewer.ViewModel
         private bool loadNotImplementedFormats;
         private FormatProviderViewModel provider;
 
+        static int i;
+
         public MainWindowViewModel(IClipboard clipboard, IEnumerable<Func<IClipbordFormatProvider>> accessibleFromats)
         {
+            i++;
             this.clipboard = clipboard;
 
-            this.clipboardFormats = accessibleFromats as Func<IClipbordFormatProvider>[] ?? accessibleFromats.ToArray();
+            this.clipboardFormats = accessibleFromats.ToArray();
             clipboardFormats.ForEach(clipboard.RegisterFormatProvider);
 
             ReloadClipboardContent = new RelayCommand(UpdateFormats, () => !AutoUpdate);
@@ -38,7 +43,7 @@ namespace ClipboardViewer.ViewModel
             Dispatcher.CurrentDispatcher.InvokeAsync(UpdateFormats, DispatcherPriority.Background);
         }
 
-        [InjectValue]
+        [ShoudlInject]
         public IClipbordWatcher ClipbordWatcher
         {
             get { return clipbordWatcher; }
@@ -53,8 +58,12 @@ namespace ClipboardViewer.ViewModel
             }
         }
 
-        [InjectValue]
-        ITypeMapperRegistry ClipboardForamtMapper { get; set; }
+        [InjectInstance("FormatProviders")]
+        public ITypeMapperRegistry ClipboardForamtMapper { get; set; }
+
+
+        [ShoudlInject]
+        public IClipbordMessageProvider MessageProvider { get; set; }
 
         private void OnClipboardContentChanged(object sender, EventArgs<uint> eventArgs)
         {
@@ -85,8 +94,7 @@ namespace ClipboardViewer.ViewModel
                 if (loadNotImplementedFormats == value) return;
                 loadNotImplementedFormats = value;
 
-                if (ReloadClipboardContent.CanExecute())
-                    ReloadClipboardContent.Execute();
+                UpdateFormats();
 
                 OnPropertyChanged();
             }
@@ -99,10 +107,12 @@ namespace ClipboardViewer.ViewModel
         {
             lock (clipboard)
             {
-                clipboard.OpenReadOnly();
-                var formats = clipboard.GetAvalibleFromats(loadNotImplementedFormats).ToList();
-                clipboard.Close();
-                return formats;
+                using (var clipboardReader = clipboard.CreateReader())
+                {
+                    var formats = clipboardReader.GetAvalibleFromats(loadNotImplementedFormats).ToArray();
+                    clipboardReader.Close();
+                    return formats;
+                }
             }
         }
 
@@ -129,6 +139,14 @@ namespace ClipboardViewer.ViewModel
             var porviderViewModels = new List<FormatProviderViewModel>();
             foreach (IClipbordFormatProvider provider in GetAvalibleFromats())
             {
+                lock (clipboard)
+                {
+                    using (var clipboardReader = clipboard.CreateReader())
+                    {
+                        clipboardReader.GetData(provider);
+                        clipboardReader.Close();
+                    }
+                }
                 var providerVms= ClipboardForamtMapper.ResolveDescendants<FormatProviderViewModel>(provider);
 
                 porviderViewModels.AddRange(providerVms);

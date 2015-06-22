@@ -15,6 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardHelper.Test", "Cli
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D973F5F8-1E39-4F8F-A11C-0335004FB360}"
 	ProjectSection(SolutionItems) = preProject
+		BuildActions.target = BuildActions.target
 		BuildTargets.target = BuildTargets.target
 	EndProjectSection
 EndProject
@@ -32,6 +33,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardViewer.Test", "ClipboardViewer.Test\ClipboardViewer.Test.csproj", "{2A85BAB8-4C7D-42B1-AFC5-1AD6AF585D8C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils.Wpf", "Utils.Wpf\Utils.Wpf.csproj", "{E443A1C6-6077-4C03-A2C7-BA93C748011B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardViewer.App", "ClipboardViewer.App\ClipboardViewer.App.csproj", "{92758DF3-DB25-4E82-815A-4432F92C5D2F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9B6984AF-177E-402F-A6E4-ECC0879684F7} = {9B6984AF-177E-402F-A6E4-ECC0879684F7}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils.Wpf.Test", "Utils.Wpf.Test\Utils.Wpf.Test.csproj", "{A93BF8EF-3A26-43BD-B854-895497AEF451}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -173,6 +181,34 @@ Global
 		{E443A1C6-6077-4C03-A2C7-BA93C748011B}.Release|Win32.ActiveCfg = Release|Any CPU
 		{E443A1C6-6077-4C03-A2C7-BA93C748011B}.Release|x64.ActiveCfg = Release|Any CPU
 		{E443A1C6-6077-4C03-A2C7-BA93C748011B}.Release|x86.ActiveCfg = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|Win32.ActiveCfg = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|x64.ActiveCfg = Release|Any CPU
+		{92758DF3-DB25-4E82-815A-4432F92C5D2F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|Win32.ActiveCfg = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|x64.ActiveCfg = Release|Any CPU
+		{A93BF8EF-3A26-43BD-B854-895497AEF451}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

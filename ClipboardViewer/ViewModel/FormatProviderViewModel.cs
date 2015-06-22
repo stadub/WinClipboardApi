@@ -4,6 +4,7 @@ using ClipboardHelper.FormatProviders;
 using Utils;
 using System.Collections.Generic;
 using System.Linq;
+using Utils.TypeMapping;
 
 namespace ClipboardViewer.ViewModel
 {
@@ -146,15 +147,8 @@ namespace ClipboardViewer.ViewModel
         [MapSourceProperty(Path = "Quote.Timestamp")]
         public long Timestamp { get; set; }
 
-        [MapSourceProperty(Path = "Quote.LegacyQuote", UseInitalizer = "InitQuoteMessageLines")]
+        [MapSourceProperty(Path = "Quote.LegacyQuote")]
         public IList<SkypeMessageTextLineViewModel> LegacyQuote { get; set; }
-
-
-        public void InitQuoteMessageLines(IList<SkypeMessageTextLine> legacyQuote)
-        {
-            var propMapper = new TypeMapper<SkypeMessageTextLine, SkypeMessageTextLineViewModel>();
-            LegacyQuote = legacyQuote.Select(line => propMapper.Map(line)).ToList();
-        }
 
     }
 
