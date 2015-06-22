@@ -14,12 +14,12 @@ namespace Utils.TypeMapping.ValueResolvers
             propertyInjections.Add(BuilderUtils.GetKey(propInfo), value);
         }
 
-        public bool IsMemberSuitable(PropertyInfo propertyInfo)
+        public bool IsMemberSuitable(IPropertyMappingInfo propertyInfo)
         {
             return propertyInjections.ContainsKey(BuilderUtils.GetKey(propertyInfo));
         }
 
-        public ISourceInfo ResolveSourceValue(PropertyInfo propertyInfo, object source)
+        public ISourceInfo ResolveSourceValue(IPropertyMappingInfo propertyInfo, object source)
         {
             var key = BuilderUtils.GetKey(propertyInfo);
             object value;

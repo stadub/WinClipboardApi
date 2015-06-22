@@ -18,5 +18,10 @@ namespace Utils.TypeMapping
         {
             return new KeyValuePair<string, string>(propInfo.Name, propInfo.Type.FullName);
         }
+
+        public static KeyValuePair<string, string> GetKey(IPropertyMappingInfo propInfo)
+        {
+            return new KeyValuePair<string, string>(propInfo.Name, propInfo.Type.FullName);
+        }
     }
 }

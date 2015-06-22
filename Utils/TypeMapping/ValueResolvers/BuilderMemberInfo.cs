@@ -6,6 +6,11 @@ using System.Reflection;
 
 namespace Utils.TypeMapping.ValueResolvers
 {
+    public enum MemberType
+    {
+        Parameter, Property
+    }
+
     public class BuilderMemberInfo
     {
         [DebuggerStepThrough]
@@ -18,10 +23,10 @@ namespace Utils.TypeMapping.ValueResolvers
         }
 
         [DebuggerStepThrough]
-        public BuilderMemberInfo(PropertyInfo mappingMember)
+        public BuilderMemberInfo(IPropertyMappingInfo mappingMember)
         {
-            Attributes = mappingMember.GetCustomAttributes();
-            Type = mappingMember.PropertyType;
+            Attributes = mappingMember.Attributes;
+            Type = mappingMember.Type;
             Name = mappingMember.Name;
             MemberType = MemberType.Property;
         }
@@ -45,15 +50,58 @@ namespace Utils.TypeMapping.ValueResolvers
         }
 
         [DebuggerStepThrough]
-        public MappingMemberInfo(PropertyInfo mappingMember, object source):base(mappingMember)
+        public MappingMemberInfo(IPropertyMappingInfo mappingMember, object source)
+            : base(mappingMember)
         {
             SourceInstance = source;
         }
     }
 
-    public enum MemberType
+
+    public interface IPropertyMappingInfo
     {
-        Parameter, Property
+        Type Type { get; }
+        string Name { get; }
+        IList<Attribute> Attributes { get; }
+        object SourceInstance { get; }
+        void SetValue(object value);
+    }
+
+    public class PropertyMappingInfo : IPropertyMappingInfo
+    {
+
+        public Type Type { get; set; }
+        public string Name { get; set; }
+        public IList<Attribute> Attributes { get; set; }
+        public object SourceInstance { get; set; }
+
+        public Action<object> ValueSetter { get; set; }
+
+        public PropertyMappingInfo()
+        {
+            
+        }
+
+        [DebuggerStepThrough]
+        public PropertyMappingInfo(PropertyInfo mappingMember, object sourceInstance)
+        {
+            Type = mappingMember.PropertyType;
+            Name=mappingMember.Name;
+            ValueSetter = (x) => { mappingMember.SetValue(sourceInstance, x); };
+            Attributes = new List<Attribute>(mappingMember.GetCustomAttributes());
+            SourceInstance = sourceInstance;
+        }
+
+        public void SetValue(object value)
+        {
+            if (ValueSetter == null)
+            {
+                Logger.LogError("Value setter is null");
+                return;
+            }
+                
+            ValueSetter(value);
+        }
     }
 
     public class MappingItemInfo
@@ -68,5 +116,12 @@ namespace Utils.TypeMapping.ValueResolvers
         public IList<Attribute> Attributes { get; set; }
     }
 
+    public class InitMethodInfo
+    {
+        public MethodBase InitalizerMethod { get; set; }
+        public IPropertyMappingInfo PropInfo { get; set; }
+        public object Instance { get; set; }
+        public object[] MappingArgs { get; set; }
+    }
 
 }

@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Utils.TypeMapping.ValueResolvers;
 
 namespace Utils.TypeMapping.PropertyMappers
 {
     public class InitPropertyMapper : IPropertyMapper
     {
-        public bool MapPropery(ITypeMapper mapper, PropertyInfo propInfo, object sourceValue, object instance, IList<Attribute> metadata = null)
+        public bool MapPropery(ITypeMapper mapper, IPropertyMappingInfo propInfo, object sourceValue, IList<Attribute> metadata = null)
         {
+            if (!mapper.CanMap(sourceValue, propInfo.Type))
+                return false;
             Exception exception;
             MethodBase initalizerMethod = null;
             try
             {
-                initalizerMethod = GetInitMethod(instance, propInfo);
+                initalizerMethod = GetInitMethod(propInfo);
             }
             catch (AmbiguousMatchException ex) { exception = ex; }
             catch (ArgumentNullException ex) { exception = ex; }
@@ -40,7 +44,7 @@ namespace Utils.TypeMapping.PropertyMappers
                     var invokationInfo = new InitMethodInfo{
                         InitalizerMethod=initalizerMethod,
                         PropInfo=propInfo,
-                        Instance = instance,
+                        Instance = propInfo.SourceInstance,
                         MappingArgs = new[] { mappingResult.Value }
                     };
 
@@ -64,23 +68,14 @@ namespace Utils.TypeMapping.PropertyMappers
             return true;
         }
 
-        protected virtual MethodBase GetInitMethod(object instance, PropertyInfo propInfo)
+        protected virtual MethodBase GetInitMethod(IPropertyMappingInfo propInfo)
         {
-            var destType = instance.GetType();
-            var initalizer = propInfo.GetCustomAttribute<UseInitalizerAttribute>();
+            var destType = propInfo.SourceInstance.GetType();
+            var initalizer = propInfo.Attributes.FirstOrDefault(x => x is UseInitalizerAttribute) as UseInitalizerAttribute;
 
             if (initalizer == null)
                 return null;
             return destType.GetMethod(initalizer.Name);
         }
-
-        public class InitMethodInfo
-        {
-            public MethodBase InitalizerMethod { get; set; }
-            public PropertyInfo PropInfo { get; set; }
-            public object Instance { get; set; }
-            public object[] MappingArgs { get; set; }
-        }
-
     }
 }

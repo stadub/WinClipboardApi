@@ -16,8 +16,8 @@ namespace Utils.TypeMapping.ValueResolvers.ServiceLocator
 
         public Dictionary<KeyValuePair<string, string>, KeyValuePair<string, Type>> PropertyInjectionResolvers { get; private set; }
 
-        
-        public bool IsMemberSuitable(PropertyInfo propInfo)
+
+        public bool IsMemberSuitable(IPropertyMappingInfo propInfo)
         {
             var propInfoKey=BuilderUtils.GetKey(propInfo);
             return PropertyInjectionResolvers.ContainsKey(propInfoKey);
@@ -28,7 +28,7 @@ namespace Utils.TypeMapping.ValueResolvers.ServiceLocator
             return false;
         }
 
-        public ISourceInfo ResolveSourceValue(PropertyInfo propInfo, object source)
+        public ISourceInfo ResolveSourceValue(IPropertyMappingInfo propInfo, object source)
         {
             var propInfoKey=BuilderUtils.GetKey(propInfo);
             KeyValuePair<string, Type> valueType;

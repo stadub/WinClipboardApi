@@ -4,7 +4,7 @@ namespace Utils.TypeMapping.ValueResolvers
 {
     public class OptionalParameterResolver : ISourceMappingResolver
     {
-        public bool IsMemberSuitable(PropertyInfo mappingMember)
+        public bool IsMemberSuitable(IPropertyMappingInfo mappingMember)
         {
             return false;
         }
@@ -14,7 +14,7 @@ namespace Utils.TypeMapping.ValueResolvers
             return paramInfo.IsOptional;
         }
 
-        public ISourceInfo ResolveSourceValue(PropertyInfo mappingMember, object source)
+        public ISourceInfo ResolveSourceValue(IPropertyMappingInfo mappingMember, object source)
         {
             return null;
         }

@@ -41,6 +41,8 @@
   <ItemGroup>
     <Compile Include="Helpers\Debugger.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="TypeMapping\PropertyMappers\IgnorePropertyMapper.cs" />
+    <Compile Include="TypeMapping\TypeBuilders\StringFormatter.cs" />
     <Compile Include="TypeMapping\DictionaryMapper.cs" />
     <Compile Include="TypeMapping\PropertyMappers\InjectTypeMapper.cs" />
     <Compile Include="TypeMapping\MappingInfo\SourceInfo.cs" />
@@ -49,6 +51,8 @@
     <Compile Include="TypeMapping\MappingInfo\Interfaces.cs" />
     <Compile Include="TypeMapping\MappingInfo\LocatorResolutionInfo.cs" />
     <Compile Include="TypeMapping\MappingInfo\TypeMappingInfo.cs" />
+    <Compile Include="TypeMapping\TypeBuilders\StringFormatBuilder.cs" />
+    <Compile Include="TypeMapping\TypeMappers\ToStringMapper.cs" />
     <Compile Include="TypeMapping\ValueResolvers\ServiceLocator\LocatorRegistrationInfoResolver.cs" />
     <Compile Include="TypeMapping\MappingInfo\PropertyRegistrationInfo.cs" />
     <Compile Include="TypeMapping\PropertyMappers\InitPropertyMapper.cs" />
@@ -59,7 +63,7 @@
     <Compile Include="TypeMapping\TypeMappers\MappingFunc.cs" />
     <Compile Include="TypeMapping\TypeMappers\ArrayTypeMapper.cs" />
     <Compile Include="Helpers\AsyncResultBase.cs" />
-    <Compile Include="TypeMapping\TypeMappers\ConverTypeMapper.cs" />
+    <Compile Include="TypeMapping\TypeMappers\ConvertTypeMapper.cs" />
     <Compile Include="Helpers\Enumerable.cs" />
     <Compile Include="Helpers\ExceptionHelpers.cs" />
     <Compile Include="Helpers\GenericEventArgs.cs" />

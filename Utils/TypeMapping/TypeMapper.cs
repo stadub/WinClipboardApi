@@ -76,7 +76,7 @@ namespace Utils
 
             mapper.InjectTypeProperties();
 
-            return OperationResult<TDest>.Successful(mapper.Context.Instance);
+            return OperationResult<TDest>.Successful(mapper.Context.DestInstance);
         }
 
         protected virtual MappingTypeBuilder<TSource, TDest> CreateTypeBuilder()

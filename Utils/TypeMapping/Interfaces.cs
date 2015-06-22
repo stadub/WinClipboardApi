@@ -27,10 +27,10 @@ namespace Utils.TypeMapping
 
     public interface ISourceMappingResolver
     {
-        bool IsMemberSuitable(PropertyInfo propertyInfo);
+        bool IsMemberSuitable(IPropertyMappingInfo propertyInfo);
         bool IsMemberSuitable(ParameterInfo mappingMember);
 
-        ISourceInfo ResolveSourceValue(PropertyInfo propertyInfo, object source);
+        ISourceInfo ResolveSourceValue(IPropertyMappingInfo propertyInfo, object source);
         ISourceInfo ResolveSourceValue(ParameterInfo mappingMember, object source);
     }
 
@@ -42,7 +42,7 @@ namespace Utils.TypeMapping
 
     public interface IPropertyMapper
     {
-        bool MapPropery(ITypeMapper mapper, PropertyInfo property, object value, object instance, IList<Attribute> metadata = null);
+        bool MapPropery(ITypeMapper mapper, IPropertyMappingInfo propInfo, object value, IList<Attribute> metadata = null);
     }
 
     public interface ITypeMapperRegistry

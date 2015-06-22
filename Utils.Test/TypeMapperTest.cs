@@ -191,7 +191,36 @@ namespace Utils.Test
             [FormatedNumeric("D9")]
             public long Prop { get; set; }
         }
-        
+
+        public class HtmlClipboardFormatData
+        {
+            public string Version { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long StartHTML { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long EndHTML { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long StartFragment { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long EndFragment { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long StartSelection { get; set; }
+
+            [FormatedNumeric("D9")]
+            public long EndSelection { get; set; }
+
+            [Formated(null)]
+            public Uri SourceURL { get; set; }
+
+            [NonSerializable]
+            public string Html { get; set; }
+
+        }
 
         #endregion TestClasses
 
@@ -395,6 +424,7 @@ namespace Utils.Test
 
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
+            Assert.IsNotNull(dest.Prop);
 
 
             for (int i = 0; i < arr.Length; i++)
@@ -449,6 +479,37 @@ namespace Utils.Test
             var dest = mapper.Map(source);
             Assert.IsNotNull(dest);
             Assert.AreEqual("000000001", dest.Prop);
+           
+        }
+        
+        [TestMethod]
+        public void ShouldConvertClassToFormatedString()
+        {
+                    string TextHtmlData = @"Version:1.0
+StartHTML:000000194
+EndHTML:000001170
+StartFragment:000000493
+EndFragment:000001112
+StartSelection:000000507
+EndSelection:000001108
+SourceURL:res://iesetup.dll/HardAdmin.htm";
+
+            var data = new HtmlClipboardFormatData
+            {
+                Version = "1.0",
+                StartHTML = 000000194,
+                EndHTML = 000001170,
+                StartFragment = 000000493,
+                EndFragment = 000001112,
+                StartSelection = 000000507,
+                EndSelection = 000001108,
+                SourceURL = new Uri("res://iesetup.dll/HardAdmin.htm"),
+            };
+            var mapper = new StringFormatter<HtmlClipboardFormatData>();
+
+            var dest = mapper.Map(data).Trim();
+            Assert.IsNotNull(dest);
+            Assert.AreEqual(TextHtmlData, dest);
            
         }
     }

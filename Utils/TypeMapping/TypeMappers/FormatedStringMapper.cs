@@ -24,7 +24,7 @@ namespace Utils.TypeMapping.TypeMappers
             var formated = sourceInfo.Attributes.FirstOrDefault(x => x is FormatedAttribute) as FormatedAttribute;
             if (formated != null)
             {
-                Debugger.Assert(() => formated.Format != null, "Formated attribute shoud provide format value.");
+                //Debugger.Assert(() => formated.Format != null, "Formated attribute shoud provide format value.");
                 var propertyConverter = (IFormattable)sourceInfo.Value;
                 var formatedString = propertyConverter.ToString(formated.Format, CultureInfo.InvariantCulture);
 

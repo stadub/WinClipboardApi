@@ -26,7 +26,7 @@ namespace Utils.TypeMapping
 
             mapper.InjectTypeProperties();
 
-            return OperationResult<TDest>.Successful(mapper.Context.Instance);
+            return OperationResult<TDest>.Successful(mapper.Context.DestInstance);
         }
 
         protected virtual DictionaryMappingTypeBuilder<TSource, TDest> CreateTypeBuilder()

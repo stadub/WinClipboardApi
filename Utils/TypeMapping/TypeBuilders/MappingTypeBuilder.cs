@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -64,7 +65,7 @@ namespace Utils
             base.Context= new TypeMapperContext<TSource, TDest>(properyMappers);
         }
 
-        protected override ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
+        protected override ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, IPropertyMappingInfo propertyInfo)
         {
             var sourceValue = sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, Context.Source);
@@ -87,6 +88,14 @@ namespace Utils
         }
 
         public TSource Source { get; set; }
+
+        public Type SourceType
+        {
+            get
+            {
+                return Source==null ? null : Source.GetType();
+            }
+        }
 
     }
 }

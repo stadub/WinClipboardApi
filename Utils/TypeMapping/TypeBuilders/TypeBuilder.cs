@@ -80,12 +80,6 @@ namespace Utils.TypeMapping.TypeBuilders
             sourceResolvers.Add(typeMapper);
         }
 
-        private List<ISourceMappingResolver> propertyMapper = new List<ISourceMappingResolver>();
-        protected void RegisterProperyMapper(ISourceMappingResolver typeMapper)
-        {
-            propertyMapper.Add(typeMapper);
-        }
-
 
         public ConstructorInfo GetConstructor()
         {
@@ -162,14 +156,15 @@ namespace Utils.TypeMapping.TypeBuilders
         {
             var resolvedProperties = Context.ResolvedProperties;
 
-            //resolving injection properties, that wheren't registered in the "PropertyInjections"
-            var propsToInjectValue = DestType.GetProperties()
+            //resolving injection properties, which wheren't registered in the "PropertyInjections"
+            var propsToInjectValue = GetDestTypeProperties()
+                .Select(Context.GetPropertyMappingInfo)
                 .Where(x => !resolvedProperties.Contains(x)).ToArray();
 
             foreach (var prop in propsToInjectValue)
             {
                 var propKey = BuilderUtils.GetKey(prop);
-                //mark ignored propertieswas resolved
+                //mark ignored propertieswas as resolved
                 if (Context.IgnoreProperties.Contains(propKey))
                 {
                     resolvedProperties.Add(prop);
@@ -184,7 +179,12 @@ namespace Utils.TypeMapping.TypeBuilders
             }
         }
 
-        private ISourceInfo ResolvePropertyInfo(PropertyInfo propertyInfo)
+        protected PropertyInfo[] GetDestTypeProperties()
+        {
+            return DestType.GetProperties();
+        }
+
+        protected ISourceInfo ResolvePropertyInfo(IPropertyMappingInfo propertyInfo)
         {
             foreach (var sourceResolver in sourceResolvers)
             {
@@ -200,7 +200,7 @@ namespace Utils.TypeMapping.TypeBuilders
             return null;
         }
 
-        protected virtual ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, PropertyInfo propertyInfo)
+        protected virtual ISourceInfo GetMappingData(ISourceMappingResolver sourceMappingResolver, IPropertyMappingInfo propertyInfo)
         {
             return sourceMappingResolver.ResolveSourceValue(propertyInfo, null);
         }

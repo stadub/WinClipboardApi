@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -57,7 +58,7 @@ namespace Utils
         public static void SetPropertyValue(PropertyInfo property, object instance, string value,ITypeMapper mapper=null)
         {
             if (mapper==null)
-                mapper = new ConverTypeMapper();
+                mapper = new ConvertTypeMapper();
             Debug.Assert(property != null);
             if (property == null || instance == null | value == null)
                 return;
@@ -73,12 +74,26 @@ namespace Utils
             property.SetValue(instance, propValue);
         }
 
-        public static string GetPropertyValue(PropertyInfo property, object instance, ITypeMapper<object,string> mapper = null)
+        public static string GetPropertyValue(PropertyInfo property, object instance, ITypeMapper<object,string> mapper = null,IEnumerable<Attribute> attributes=null)
         {
             var propertyValue = property.GetValue(instance);
+            var info = new SourceInfo(propertyValue)
+            {
+                Attributes = attributes.ToArray() ?? new Attribute[0]
+            };
+
             if(mapper==null)
                 mapper= new FormatedStringMapper<object>();
-            var mapResult = mapper.TryMap(propertyValue);
+
+            if (mapper is ITypeInfoMapper)
+            {
+                var infoMapper = (ITypeInfoMapper)mapper;
+                var result=infoMapper.TryMap(info);
+                if (result.Success)
+                    return result.Value.ToString();
+            }
+
+            IOperationResult<string> mapResult = mapper.TryMap(info);
             if (mapResult.Success) 
                 return mapResult.Value;
             try
@@ -133,5 +148,9 @@ namespace Utils
             : base(format)
         {
         }
+    }
+
+    public class NonSerializableAttribute : Attribute
+    {
     }
 }

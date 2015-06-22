@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace Utils.TypeMapping.TypeMappers
 {
-    public class ConverTypeMapper<TSource, TDest> :ConverTypeMapper, ITypeMapper<TSource, TDest>
+    public class ConvertTypeMapper<TSource, TDest> :ConvertTypeMapper, ITypeMapper<TSource, TDest>
     {
         public bool CanMap(TSource source)
         {
@@ -27,7 +27,7 @@ namespace Utils.TypeMapping.TypeMappers
         }
     }
 
-    public class ConverTypeMapper : ITypeMapper
+    public class ConvertTypeMapper : ITypeMapper
     {
         public IOperationResult Map(object source, Type destType)
         {
